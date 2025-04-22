@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { generateUniqueId } from '@/utils/helpers';
 import { useMatches } from '@/hooks/useMatches';
 import { ChevronDown, ChevronUp, Users, DollarSign, Flag, X } from 'lucide-react-native';
+import { useMatchContext } from '@/context/MatchContext';
 
 interface GameFormat {
   id: string;
@@ -28,9 +29,10 @@ export default function NewMatchScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { saveMatch } = useMatches();
+  const { setTeams } = useMatchContext();
   
   const [title, setTitle] = useState('');
-  const [teams, setTeams] = useState([
+  const [teams, setTeamsState] = useState([
     { id: '1', name: '', placeholder: 'Team 1', players: [] },
     { id: '2', name: '', placeholder: 'Team 2', players: [] },
   ]);
@@ -48,7 +50,7 @@ export default function NewMatchScreen() {
 
   const addTeam = () => {
     if (teams.length < 3) {
-      setTeams([
+      setTeamsState([
         ...teams,
         { id: generateUniqueId(), name: '', placeholder: 'Team 3', players: [] }
       ]);
@@ -58,12 +60,12 @@ export default function NewMatchScreen() {
 
   const removeTeam = (id: string) => {
     if (teams.length > 2) {
-      setTeams(teams.filter(team => team.id !== id));
+      setTeamsState(teams.filter(team => team.id !== id));
     }
   };
 
   const updateTeamName = (id: string, name: string) => {
-    setTeams(teams.map(team => 
+    setTeamsState(teams.map(team => 
       team.id === id ? { ...team, name } : team
     ));
   };
@@ -120,18 +122,26 @@ export default function NewMatchScreen() {
     }
 
     const enabledFormats = gameFormats.filter(format => format.enabled);
-    
+
     if (enabledFormats.length === 0) {
       Alert.alert('Error', 'Please select at least one game format');
       return;
     }
 
+    // Ensure all teams have scores initialized
+    const initializedTeams = teams.map(team => ({
+      ...team,
+      scores: Array(18).fill(null), // Initialize scores for 18 holes
+    }));
+
+    setTeams(initializedTeams); // Update teams in MatchContext
+
     const newMatch = {
       id: generateUniqueId(),
       title: title || `Match ${new Date().toLocaleDateString()}`,
-      teams: teams.map(team => ({
+      teams: initializedTeams.map(team => ({
         ...team,
-        name: team.name || team.placeholder
+        name: team.name || team.placeholder,
       })),
       gameFormats: enabledFormats.map(format => ({
         type: format.type,
@@ -141,7 +151,7 @@ export default function NewMatchScreen() {
       enablePresses,
       holes: Array(18).fill(null).map((_, i) => ({
         number: i + 1,
-        scores: teams.map(team => ({ teamId: team.id, score: null })),
+        scores: initializedTeams.map(team => ({ teamId: team.id, score: null })),
         presses: [],
         isComplete: false,
       })),
@@ -155,19 +165,19 @@ export default function NewMatchScreen() {
 
   const validateForm = () => {
     const uniqueNames = new Set(teams.map(team => team.name || team.placeholder));
-    
+
     if (uniqueNames.size !== teams.length) {
       Alert.alert('Error', 'Each team must have a unique name');
       return false;
     }
-    
+
     const enabledFormats = gameFormats.filter(format => format.enabled);
-    
+
     if (enabledFormats.some(format => isNaN(parseFloat(format.betAmount)) && enablePresses)) {
       Alert.alert('Error', 'Please enter valid bet amounts for all enabled formats');
       return false;
     }
-    
+
     return true;
   };
 

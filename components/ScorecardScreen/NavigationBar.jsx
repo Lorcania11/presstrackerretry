@@ -1,12 +1,29 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 
 const NavigationBar = () => {
+  const [time, setTime] = useState('');
+  const { width } = Dimensions.get('window');
+
+  // Update time dynamically
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      setTime(`${hours}:${minutes}`);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000); // Update every second
+    return () => clearInterval(interval); // Cleanup interval on unmount
+  }, []);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { width }]}>
       <View style={styles.statusBar}>
         <View style={styles.timeWrapper}>
-          <Text style={styles.time}>9:41</Text>
+          <Text style={styles.time}>{time}</Text>
         </View>
         <View style={styles.spacer} />
         <View style={styles.statusIcons}>
@@ -24,15 +41,18 @@ const NavigationBar = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 384,
     height: 96,
-    backgroundColor: 'rgba(255,255,255,0.75)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderBottomWidth: 0.33,
     borderColor: '#0F0F0F',
     paddingTop: 20,
     paddingHorizontal: 16,
     justifyContent: 'flex-start',
-    backdropFilter: 'blur(10px)', // For Web, ignored in mobile
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2, // For Android shadow
   },
   statusBar: {
     flexDirection: 'row',

@@ -122,7 +122,13 @@ export default function HomeScreen() {
               styles.quickActionCard,
               { backgroundColor: isDark ? '#1E1E1E' : action.color }
             ]}
-            onPress={() => router.push(action.route)}
+            onPress={() => {
+              if (action.route) {
+                router.push(action.route);
+              } else {
+                console.error(`Invalid route for action: ${action.title}`);
+              }
+            }}
           >
             {action.icon}
             <Text style={[

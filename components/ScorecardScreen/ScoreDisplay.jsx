@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const ScoreDisplay = ({ scores }) => {
+const ScoreDisplay = ({ scores = [] }) => {
   return (
     <View style={styles.container}>
-      {scores?.[0] !== undefined && (
-        <Text style={[styles.score, styles.left]}>{scores[0]}</Text>
-      )}
-      {scores?.[1] !== undefined && (
-        <Text style={[styles.score, styles.center]}>{scores[1]}</Text>
-      )}
-      {scores?.[2] !== undefined && (
-        <Text style={[styles.score, styles.right]}>{scores[2]}</Text>
-      )}
+      {scores.map((score, index) => {
+        const positionStyle =
+          index === 0 ? styles.left : index === 1 ? styles.center : styles.right;
+        return (
+          <Text key={index} style={[styles.score, positionStyle]}>
+            {score !== undefined ? score : ''}
+          </Text>
+        );
+      })}
     </View>
   );
 };

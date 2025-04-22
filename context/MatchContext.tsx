@@ -1,51 +1,33 @@
 // MatchContext.tsx
 import React, { createContext, useContext, useState } from 'react';
 
-type PressType = 'f9' | 'b9' | 't';
-
-interface Press {
-  fromTeamId: number;
-  toTeamId: number;
-  holeIndex: number;
-  pressType: PressType;
-}
-
 interface Team {
-  id: number;
+  id: string;
   name: string;
   scores: (number | null)[];
 }
 
-interface MatchState {
+interface MatchContextType {
   teams: Team[];
-  presses: Press[];
+  setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
 }
 
-const defaultMatch: MatchState = {
-  teams: [
-    { id: 1, name: '', scores: Array(18).fill(null) },
-    { id: 2, name: '', scores: Array(18).fill(null) },
-    { id: 3, name: '', scores: Array(18).fill(null) }
-  ],
-  presses: []
-};
+const MatchContext = createContext<MatchContextType | undefined>(undefined);
 
-export const MatchContext = createContext<{
-  match: MatchState;
-  setMatch: React.Dispatch<React.SetStateAction<MatchState>>;
-}>({
-  match: defaultMatch,
-  setMatch: () => {}
-});
-
-export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
-  const [match, setMatch] = useState<MatchState>(defaultMatch);
+export const MatchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [teams, setTeams] = useState<Team[]>([]);
 
   return (
-    <MatchContext.Provider value={{ match, setMatch }}>
+    <MatchContext.Provider value={{ teams, setTeams }}>
       {children}
     </MatchContext.Provider>
   );
 };
 
-export default MatchContext;
+export const useMatchContext = () => {
+  const context = useContext(MatchContext);
+  if (!context) {
+    throw new Error('useMatchContext must be used within a MatchProvider');
+  }
+  return context;
+};
