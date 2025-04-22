@@ -1,21 +1,36 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { View } from 'react-native';
-import NavigationBar from '@/components/ScorecardScreen/NavigationBar';
-import HeaderSection from '@/components/ScorecardScreen/HeaderSection';
-import ScorecardTitle from '@/components/ScorecardScreen/ScorecardTitle';
-import ScorecardWithPresses from '@/components/ScorecardScreen/ScorecardWithPresses';
-import { MatchContext } from '@/context/MatchContext';
+import GestureRecognizer from 'react-native-swipe-gestures';
+import NavigationBar from './NavigationBar';
+import HeaderSection from './HeaderSection';
+import ScorecardTitle from './ScorecardTitle';
+import TeamsLayout from './TeamsLayout';
+import HoleNumbers from './HoleNumbers';
+import ScorecardGrid from './ScorecardGrid';
+import PressNotification from './PressNotification';
+import { MatchContext } from '@/contexts/MatchContext';
 
 const ScoreCard = () => {
   const { match } = useContext(MatchContext);
+  const [showBack9, setShowBack9] = useState(false);
+
+  const handleSwipeLeft = () => setShowBack9(true);
+  const handleSwipeRight = () => setShowBack9(false);
+
+  if (!match) return null;
 
   return (
-    <View className="flex flex-col items-center bg-white">
-      <NavigationBar />
-      <HeaderSection />
-      <ScorecardTitle />
-      <ScorecardWithPresses match={match} />
-    </View>
+    <GestureRecognizer onSwipeLeft={handleSwipeLeft} onSwipeRight={handleSwipeRight}>
+      <View>
+        <NavigationBar />
+        <HeaderSection />
+        <ScorecardTitle />
+        <TeamsLayout teams={match.teams} />
+        <HoleNumbers showBack9={showBack9} />
+        <ScorecardGrid showBack9={showBack9} />
+        <PressNotification presses={match.presses} />
+      </View>
+    </GestureRecognizer>
   );
 };
 
