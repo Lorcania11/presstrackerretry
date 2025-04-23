@@ -1,18 +1,16 @@
 // app/match/[id].tsx
 import { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Alert } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useMatches } from '@/hooks/useMatches';
-import { useMatchContext } from '@/context/MatchContext';
 import InputDesign from '@/components/ScoreInput/InputDesign';
 import { MatchData, Teams } from '@/components/ScoreInput/types';
 
 export default function MatchScreen() {
   const route = useRoute();
-  const id = route.params?.id;
+  const id = route.params?.id || '';
   const { getMatch, updateMatch } = useMatches();
-  const { setTeams } = useMatchContext();
   
   const [match, setMatch] = useState<MatchData | null>(null);
   const [isLoading, setIsLoading] = useState(true);

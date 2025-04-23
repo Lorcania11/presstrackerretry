@@ -1,11 +1,13 @@
 // tailwind.config.js
 module.exports = {
-  content: [
-    "./app/**/*.{js,jsx,ts,tsx}",
-    "./components/**/*.{js,jsx,ts,tsx}"
-  ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        // Add your custom colors here
+        'team1': '#4CAE4F',
+        'team2': '#FFC105',
+        'team3': '#F44034',
+      },
+    },
   },
-  plugins: [],
 }
