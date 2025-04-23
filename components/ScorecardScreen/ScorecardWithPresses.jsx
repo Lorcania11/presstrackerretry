@@ -1,52 +1,47 @@
 import React from 'react';
-import { View } from 'react-native';
-import { useMatchContext } from '@/context/MatchContext';
-import HoleNumbers from './HoleNumbers';
-import ScoreDisplay from './ScoreDisplay';
-import PressNotification from './PressNotification';
-import RunningTotals from './RunningTotals';
+import { View, Text, StyleSheet } from 'react-native';
 
-const ScorecardWithPresses = ({ matchId, front9Scores = [], back9Scores = [], presses = [] }) => {
-  const { teams } = useMatchContext();
-
+const ScorecardWithPresses = ({ scores, pressIndicators }) => {
   return (
-    <View>
-      {/* Front 9 Section */}
-      <View className="flex flex-row items-start mt-2">
-        <HoleNumbers showBack9={false} />
-        <View className="flex flex-col gap-[13px] ml-4">
-          {teams.map((team) => team.scores?.slice(0, 9) || []).flat().map((score, index) => (
-            <ScoreDisplay
-              key={`front9-${index}`}
-              scores={teams.map((team) => team.scores?.[index] ?? '')}
-            />
+    <View style={styles.scoreRow}>
+      {scores.map((score, index) => (
+        <View key={index} style={styles.scoreCell}>
+          <Text style={styles.scoreText}>{score}</Text>
+          {pressIndicators[index]?.map((color, i) => (
+            <View key={i} style={[styles.dot, { backgroundColor: color }]} />
           ))}
         </View>
-        <View className="absolute right-4 top-[0px]">
-          <PressNotification presses={presses} matchId={matchId} />
-        </View>
-      </View>
-
-      {/* Back 9 Section */}
-      <View className="flex flex-row items-start mt-4">
-        <HoleNumbers showBack9={true} />
-        <View className="flex flex-col gap-[13px] ml-4">
-          {teams.map((team) => team.scores?.slice(9, 18) || []).flat().map((score, index) => (
-            <ScoreDisplay
-              key={`back9-${index}`}
-              scores={teams.map((team) => team.scores?.[index + 9] ?? '')}
-            />
-          ))}
-        </View>
-        <View className="absolute right-4 top-[0px]">
-          <PressNotification presses={presses} matchId={matchId} />
-        </View>
-      </View>
-
-      {/* Running Totals */}
-      <RunningTotals front9Scores={front9Scores.flat()} back9Scores={back9Scores.flat()} />
+      ))}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  scoreCell: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 2,
+    position: 'relative',
+  },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    position: 'absolute',
+    top: 4,
+    right: 4,
+  },
+});
 
 export default ScorecardWithPresses;
