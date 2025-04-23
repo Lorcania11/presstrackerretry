@@ -9,6 +9,7 @@ import {
   useColorScheme,
   RefreshControl,
   Platform,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -72,29 +73,47 @@ export default function HomeScreen() {
     }
   ];
 
-  const getContainerStyle = () => ({
-    ...styles.container,
-    backgroundColor: isDark ? '#121212' : '#F5F5F5'
-  });
+  // Utility function for dynamic styling based on theme
+  const getThemedStyles = {
+    container: () => ({
+      ...styles.container,
+      backgroundColor: isDark ? '#121212' : '#F5F5F5'
+    }),
+    card: () => ({
+      ...styles.card,
+      backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF'
+    }),
+    text: (baseStyle) => ({
+      ...baseStyle,
+      color: isDark ? '#FFFFFF' : '#333333'
+    }),
+    subText: (baseStyle) => ({
+      ...baseStyle,
+      color: isDark ? '#CCCCCC' : '#666666'
+    }),
+    actionCard: (color) => ({
+      ...styles.quickActionCard,
+      backgroundColor: isDark ? '#1E1E1E' : color
+    })
+  };
 
-  const getCardStyle = () => ({
-    ...styles.card,
-    backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF'
-  });
-
-  const getTextStyle = () => ({
-    ...styles.welcomeText,
-    color: isDark ? '#FFFFFF' : '#333333'
-  });
-
-  const getSubTextStyle = () => ({
-    ...styles.subText,
-    color: isDark ? '#CCCCCC' : '#666666'
-  });
+  const handleNavigate = (route: string, title: string) => {
+    if (route) {
+      try {
+        router.push(route);
+      } catch (error) {
+        console.error(`Navigation error for route ${route}:`, error);
+        Alert.alert('Navigation Error', `Unable to navigate to ${title}. This feature may not be available yet.`);
+      }
+    } else {
+      console.error(`Invalid route for action: ${title}`);
+      Alert.alert('Feature Unavailable', `The ${title} feature is coming soon!`);
+    }
+  };
 
   return (
     <ScrollView 
-      style={getContainerStyle()}
+      style={getThemedStyles.container()}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -105,8 +124,8 @@ export default function HomeScreen() {
     >
       <View style={styles.header}>
         <View>
-          <Text style={getTextStyle()}>Golf Match Tracker</Text>
-          <Text style={getSubTextStyle()}>Welcome back!</Text>
+          <Text style={getThemedStyles.text(styles.welcomeText)}>Golf Match Tracker</Text>
+          <Text style={getThemedStyles.subText(styles.subText)}>Welcome back!</Text>
         </View>
         <Image
           source={{ uri: 'https://images.pexels.com/photos/914930/pexels-photo-914930.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=2' }}
@@ -118,41 +137,31 @@ export default function HomeScreen() {
         {quickActions.map((action, index) => (
           <TouchableOpacity
             key={index}
-            style={[
-              styles.quickActionCard,
-              { backgroundColor: isDark ? '#1E1E1E' : action.color }
-            ]}
-            onPress={() => {
-              if (action.route) {
-                router.push(action.route);
-              } else {
-                console.error(`Invalid route for action: ${action.title}`);
-              }
-            }}
+            style={getThemedStyles.actionCard(action.color)}
+            onPress={() => handleNavigate(action.route, action.title)}
+            accessibilityLabel={action.title}
+            accessibilityHint={action.subtitle}
           >
             {action.icon}
-            <Text style={[
-              styles.quickActionTitle,
-              { color: isDark ? '#FFFFFF' : '#333333' }
-            ]}>
+            <Text style={getThemedStyles.text(styles.quickActionTitle)}>
               {action.title}
             </Text>
-            <Text style={[
-              styles.quickActionSubtitle,
-              { color: isDark ? '#CCCCCC' : '#666666' }
-            ]}>
+            <Text style={getThemedStyles.subText(styles.quickActionSubtitle)}>
               {action.subtitle}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <View style={getCardStyle()}>
+      <View style={getThemedStyles.card()}>
         <View style={styles.cardHeader}>
-          <Text style={[styles.cardTitle, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+          <Text style={getThemedStyles.text(styles.cardTitle)}>
             Recent Activity
           </Text>
-          <TouchableOpacity onPress={() => router.push('/history')}>
+          <TouchableOpacity 
+            onPress={() => handleNavigate('/history', 'History')}
+            accessibilityLabel="View all activities"
+          >
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
@@ -163,16 +172,10 @@ export default function HomeScreen() {
               <Trophy size={20} color="#4CAF50" />
             </View>
             <View style={styles.activityContent}>
-              <Text style={[
-                styles.activityTitle,
-                { color: isDark ? '#FFFFFF' : '#333333' }
-              ]}>
+              <Text style={getThemedStyles.text(styles.activityTitle)}>
                 Won match against John
               </Text>
-              <Text style={[
-                styles.activityTime,
-                { color: isDark ? '#CCCCCC' : '#666666' }
-              ]}>
+              <Text style={getThemedStyles.subText(styles.activityTime)}>
                 <Clock size={12} color={isDark ? '#CCCCCC' : '#666666'} /> 2 hours ago
               </Text>
             </View>
@@ -181,32 +184,32 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <View style={[getCardStyle(), styles.statsCard]}>
-        <Text style={[styles.cardTitle, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+      <View style={[getThemedStyles.card(), styles.statsCard]}>
+        <Text style={getThemedStyles.text(styles.cardTitle)}>
           Quick Stats
         </Text>
         <View style={styles.statsGrid}>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+            <Text style={getThemedStyles.text(styles.statValue)}>
               72
             </Text>
-            <Text style={[styles.statLabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+            <Text style={getThemedStyles.subText(styles.statLabel)}>
               Best Score
             </Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+            <Text style={getThemedStyles.text(styles.statValue)}>
               15
             </Text>
-            <Text style={[styles.statLabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+            <Text style={getThemedStyles.subText(styles.statLabel)}>
               Matches
             </Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+            <Text style={getThemedStyles.text(styles.statValue)}>
               8
             </Text>
-            <Text style={[styles.statLabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+            <Text style={getThemedStyles.subText(styles.statLabel)}>
               Wins
             </Text>
           </View>
