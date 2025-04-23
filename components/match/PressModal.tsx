@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { Teams } from "../types";
+import { Teams } from "./types";
 
 interface PressModalProps {
   visible: boolean;
