@@ -104,7 +104,7 @@ const InputDesign: React.FC<InputDesignProps> = ({
         
         if (!isNaN(scoreValue)) {
           const scoreIndex = updatedMatch.holes[holeIndex].scores.findIndex(
-            s => s.teamId === team.id
+            (s: { teamId: string; score: number | null }) => s.teamId === team.id
           );
           
           if (scoreIndex !== -1) {
