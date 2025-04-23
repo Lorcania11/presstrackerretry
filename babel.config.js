@@ -1,16 +1,10 @@
-// babel.config.js
-module.exports = function (api) {
+module.exports = function(api) {
   api.cache(true);
   return {
-    presets: [
-      "babel-preset-expo",
-      "@babel/preset-env",
-      "@babel/preset-react",
-      "@babel/preset-typescript"
-    ],
+    presets: ['babel-preset-expo'],
     plugins: [
-      "react-native-reanimated/plugin",
-      "nativewind/babel"
-    ],
+      'react-native-reanimated/plugin',
+      'nativewind/babel'
+    ]
   };
 };
