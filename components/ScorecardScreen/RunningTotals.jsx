@@ -1,70 +1,69 @@
-import React from 'react';
+// components/ScorecardScreen/RunningTotals.tsx
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
-const RunningTotals = ({ front9Scores = [], back9Scores = [] }) => {
-  const front9Total = front9Scores.reduce((sum, score) => sum + (score || 0), 0);
-  const back9Total = back9Scores.reduce((sum, score) => sum + (score || 0), 0);
-  const combinedTotal = front9Total + back9Total;
+interface RunningTotalsProps {
+  teams: Array<{
+    id: string;
+    name: string;
+    scores: Array<number | null>;
+  }>;
+  showBack9: boolean;
+}
 
+const RunningTotals: React.FC<RunningTotalsProps> = ({ teams, showBack9 }) => {
+  const totals = useMemo(() => {
+    return teams.map(team => {
+      const front9 = team.scores.slice(0, 9).reduce((sum, score) => 
+        sum + (score !== null ? score : 0), 0);
+      
+      const back9 = team.scores.slice(9, 18).reduce((sum, score) => 
+        sum + (score !== null ? score : 0), 0);
+      
+      return {
+        teamId: team.id,
+        front9,
+        back9,
+        total: front9 + back9
+      };
+    });
+  }, [teams]);
+  
   return (
     <View style={styles.container}>
-      <Text style={styles.front9Total}>{front9Total}</Text>
-      <Text style={styles.back9Total}>{back9Total}</Text>
-      <Text style={styles.combinedTotal}>{combinedTotal}</Text>
+      {totals.map((total) => (
+        <View key={total.teamId} style={styles.totalRow}>
+          <Text style={styles.sectionTotal}>
+            {showBack9 ? total.back9 : total.front9}
+          </Text>
+          <Text style={styles.grandTotal}>{total.total}</Text>
+        </View>
+      ))}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-    flexShrink: 0,
-    height: 83,
-    width: 272,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    rowGap: 0,
+    marginTop: 20,
   },
-  front9Total: {
-    position: 'absolute',
-    flexShrink: 0,
-    width: 35,
-    height: 18,
-    textAlign: 'left',
-    color: 'rgba(15, 15, 15, 0.5)',
-    fontFamily: 'Open Sans',
-    fontSize: 30,
+  totalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 40,
+    marginBottom: 1,
+  },
+  sectionTotal: {
+    width: 40,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  grandTotal: {
+    marginLeft: 20,
+    fontSize: 18,
     fontWeight: '700',
-    lineHeight: 18,
-    left: 4,
-  },
-  back9Total: {
-    position: 'absolute',
-    flexShrink: 0,
-    width: 35,
-    height: 18,
-    textAlign: 'left',
-    color: 'rgba(15, 15, 15, 0.5)',
-    fontFamily: 'Open Sans',
-    fontSize: 30,
-    fontWeight: '700',
-    lineHeight: 18,
-    left: 113,
-  },
-  combinedTotal: {
-    position: 'absolute',
-    flexShrink: 0,
-    width: 46,
-    height: 18,
-    textAlign: 'left',
-    color: 'rgba(15, 15, 15, 0.75)',
-    fontFamily: 'Open Sans',
-    fontSize: 40,
-    fontWeight: '700',
-    lineHeight: 18,
-    left: 226,
-  },
+  }
 });
 
 export default RunningTotals;

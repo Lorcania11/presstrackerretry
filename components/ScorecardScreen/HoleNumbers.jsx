@@ -1,62 +1,60 @@
+// components/ScorecardScreen/HoleNumbers.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import PropTypes from 'prop-types';
 
-const HoleNumbers = ({ showBack9 }) => {
+interface HoleNumbersProps {
+  showBack9: boolean;
+}
+
+const HoleNumbers: React.FC<HoleNumbersProps> = ({ showBack9 }) => {
   const { height, width } = Dimensions.get('window');
   const holes = showBack9 ? [...Array(9)].map((_, i) => i + 10) : [...Array(9)].map((_, i) => i + 1);
 
   return (
-    <View style={[styles.container, { height: height * 0.6, width: width * 0.1 }]}>
-      <Text style={[styles.label, styles.holeLabel]}>Hole</Text>
-      {holes.map((hole, idx) => (
-        <Text
-          key={hole}
-          style={[
-            styles.label,
-            {
-              top: (height * 0.05) * (idx + 1), // Dynamically adjust top position
-              left: width * 0.03, // Dynamically adjust left position
-            },
-          ]}
-        >
-          {hole}
-        </Text>
+    <View style={styles.container}>
+      <Text style={styles.holeLabel}>Hole</Text>
+      {holes.map((hole) => (
+        <Text key={hole} style={styles.number}>{hole}</Text>
       ))}
-      <Text style={[styles.label, styles.total, { top: height * 0.7 }]}>Total</Text>
-      <Text style={[styles.label, styles.range, { top: height * 0.65 }]}>
+      <Text style={styles.totalLabel}>Total</Text>
+      <Text style={styles.rangeLabel}>
         {showBack9 ? '10-18' : '1-9'}
       </Text>
     </View>
   );
 };
 
-HoleNumbers.propTypes = {
-  showBack9: PropTypes.bool.isRequired, // Validate that showBack9 is a boolean and required
-};
-
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-  },
-  label: {
-    position: 'absolute',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Open Sans',
-    color: '#000',
-    lineHeight: 16,
+    width: 50,
+    paddingRight: 8,
   },
   holeLabel: {
-    left: 0,
-    top: 0,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 20,
+    textAlign: 'center',
   },
-  total: {
-    left: -4,
+  number: {
+    fontSize: 16,
+    fontWeight: '500',
+    height: 40,
+    textAlign: 'center',
+    lineHeight: 40,
   },
-  range: {
-    left: 3,
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 20,
+    textAlign: 'center',
   },
+  rangeLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 8,
+    opacity: 0.7,
+  }
 });
 
 export default HoleNumbers;

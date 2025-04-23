@@ -1,99 +1,77 @@
+// components/ScorecardScreen/PressNotification.tsx
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
-// Added comments to clarify complex logic and ensure undefined data is handled
-const PressNotification = ({ presses = [], matchId }) => {
-  // Ensure all props have default values to prevent runtime errors
-  if (!matchId) {
-    console.error('Missing required prop: matchId');
-    return null;
-  }
+interface Press {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  holeIndex: number;
+  pressType: string;
+}
 
-  // Filter presses for the current match ID
-  const filteredPresses = presses.filter((press) => press.matchId === matchId);
+interface PressNotificationProps {
+  presses: Press[];
+  showBack9: boolean;
+}
+
+const PressNotification: React.FC<PressNotificationProps> = ({ presses, showBack9 }) => {
+  // Filter presses based on front 9 or back 9
+  const filteredPresses = presses.filter(press => {
+    const holeIndex = press.holeIndex;
+    return showBack9 ? holeIndex >= 9 && holeIndex < 18 : holeIndex < 9;
+  });
+
+  // Define team colors
+  const teamColors = {
+    '1': '#4CAE4F',  // Green
+    '2': '#FFC105',  // Yellow
+    '3': '#F44034',  // Red
+  };
 
   return (
     <View style={styles.container}>
-      {filteredPresses.map((press, idx) => {
-        // Limit to 2 dots per hole
-        if (idx >= 2) return null;
-
-        const left = getLeftForTeam(press.toTeamId, idx);
-        const top = getTopForHole(press.holeIndex);
-        const color = getColor(press.fromTeamId);
-        const icon = getIcon(press.fromTeamId); // Dynamically determine icon
-
+      {filteredPresses.map((press, index) => {
+        // Calculate position in the grid
+        const rowIndex = press.holeIndex % 9;
+        const columnOffset = press.toTeamId === press.fromTeamId ? 0 : 10;
+        
+        // Use team ID to determine color
+        const color = teamColors[press.fromTeamId as keyof typeof teamColors] || '#000000';
+        
         return (
           <View
-            key={`${press.holeIndex}-${press.fromTeamId}-${press.toTeamId}-${idx}`}
+            key={`${press.id}-${index}`}
             style={[
-              styles.dot,
-              { backgroundColor: color, top, left },
+              styles.pressIndicator,
+              {
+                backgroundColor: color,
+                top: rowIndex * 41,  // Position based on hole number
+                right: columnOffset,
+              }
             ]}
-          >
-            {icon && <Text style={styles.icon}>{icon}</Text>}
-          </View>
+          />
         );
       })}
     </View>
   );
 };
 
-// Helper function to determine dot color based on team ID
-const getColor = (id) => {
-  switch (id) {
-    case 1: return '#4CAE4F'; // Green
-    case 2: return '#FFC105'; // Yellow
-    case 3: return '#F44034'; // Red
-    default: return '#000'; // Default black
-  }
-};
-
-// Helper function to determine icon based on team ID
-const getIcon = (id) => {
-  switch (id) {
-    case 1: return '✓'; // Example icon for Team 1
-    case 2: return '★'; // Example icon for Team 2
-    case 3: return '⚡'; // Example icon for Team 3
-    default: return null; // No icon for default
-  }
-};
-
-// Helper function to calculate left position based on team ID and index
-const getLeftForTeam = (teamId, idx) => {
-  const base = {
-    1: 10, // Team 1
-    2: 30, // Team 2
-    3: 50, // Team 3
-  }[teamId] || 10;
-  return base + idx * 15; // Offset for multiple dots
-};
-
-// Helper function to calculate top position based on hole index
-const getTopForHole = (holeIndex) => {
-  const rowHeight = 50; // Height of each row in the grid
-  return holeIndex * rowHeight;
-};
-
 const styles = StyleSheet.create({
   container: {
-    width: 240, // Width of the grid
-    height: 540, // Height of the grid
-    position: 'relative',
-  },
-  dot: {
     position: 'absolute',
-    width: 20, // Adjusted size for icon
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    top: 40,  // Start after the header
+    right: 5,
+    bottom: 0,
+    width: 20,
+    pointerEvents: 'none',  // Allow touches to pass through
   },
-  icon: {
-    color: '#fff', // Icon color
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
+  pressIndicator: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  }
 });
 
 export default PressNotification;

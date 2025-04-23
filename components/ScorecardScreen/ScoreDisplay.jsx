@@ -1,45 +1,52 @@
+// components/ScorecardScreen/ScoreDisplay.tsx
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-const ScoreDisplay = ({ scores = [] }) => {
+interface ScoreDisplayProps {
+  score: number | null;
+  holeIndex: number;
+  teamId: string;
+  onScorePress?: (teamId: string, holeIndex: number) => void;
+}
+
+const ScoreDisplay: React.FC<ScoreDisplayProps> = ({ 
+  score, 
+  holeIndex, 
+  teamId, 
+  onScorePress 
+}) => {
+  const handlePress = () => {
+    if (onScorePress) {
+      onScorePress(teamId, holeIndex);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      {scores.map((score, index) => {
-        const positionStyle =
-          index === 0 ? styles.left : index === 1 ? styles.center : styles.right;
-        return (
-          <Text key={index} style={[styles.score, positionStyle]}>
-            {score !== undefined ? score : ''}
-          </Text>
-        );
-      })}
-    </View>
+    <TouchableOpacity 
+      style={styles.container} 
+      onPress={handlePress}
+      activeOpacity={onScorePress ? 0.7 : 1}
+    >
+      <Text style={styles.scoreText}>
+        {score !== null ? score.toString() : '-'}
+      </Text>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: 240,
-    height: 20,
-    position: 'relative',
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: '#DDDDDD',
+    backgroundColor: 'transparent',
   },
-  score: {
-    position: 'absolute',
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: 'Open Sans',
-    color: '#000',
-    lineHeight: 24,
-  },
-  left: {
-    left: 0,
-  },
-  center: {
-    left: 114,
-  },
-  right: {
-    left: 226,
-    top: 1,
+  scoreText: {
+    fontSize: 18,
+    fontWeight: '500',
   },
 });
 
