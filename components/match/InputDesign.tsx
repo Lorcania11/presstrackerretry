@@ -1,11 +1,12 @@
 // components/ScoreInput/InputDesign.tsx
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, Alert } from "react-native";
-import { HoleNavigation } from "./HoleNavigation";
-import { TeamScoreInput } from "./TeamScoreInput";
-import { ScoreSubmitButtons } from "./ScoreSubmitButtons";
-import { ScorecardModal } from "./ScorecardModal";
-import { PressModal } from "./PressModal";
+import tw from 'twrnc';
+import HoleNavigation from "./HoleNavigation";
+import TeamScoreInput from "./TeamScoreInput";
+import ScoreSubmitButtons from "./ScoreSubmitButtons";
+import ScorecardModal from "./ScorecardModal";
+import PressModal from "./PressModal";
 import { Teams, Scores, Press, MatchData } from "./types";
 
 interface InputDesignProps {
@@ -50,8 +51,8 @@ const InputDesign: React.FC<InputDesignProps> = ({
     setTotalSteps(teamCount * (teamCount - 1));
     
     // Initialize scores object
-    initializeScores(1);
-  }, [match]);
+    initializeScores(currentHole);
+  }, [match, formattedTeams]);
   
   // Update scores when current hole changes
   useEffect(() => {
@@ -237,14 +238,14 @@ const InputDesign: React.FC<InputDesignProps> = ({
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View style={tw`flex-1 bg-white`}>
       <ScrollView>
         <HoleNavigation
           currentHole={currentHole}
           onHoleChange={setCurrentHole}
         />
 
-        <View className="py-4">
+        <View style={tw`py-4`}>
           {Object.entries(formattedTeams).map(([teamId, team]) => (
             <TeamScoreInput
               key={teamId}

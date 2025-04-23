@@ -1,5 +1,7 @@
+// components/ScoreInput/ScoreSubmitButtons.tsx
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
+import tw from 'twrnc';
 
 interface ScoreSubmitButtonsProps {
   onSubmit: () => void;
@@ -8,30 +10,33 @@ interface ScoreSubmitButtonsProps {
   isDisabled: boolean;
 }
 
-export const ScoreSubmitButtons: React.FC<ScoreSubmitButtonsProps> = ({
+const ScoreSubmitButtons: React.FC<ScoreSubmitButtonsProps> = ({
   onSubmit,
   onViewScorecard,
   isSubmitting,
   isDisabled,
 }) => {
   return (
-    <View className="flex-row justify-between p-4">
+    <View style={tw`flex-row justify-between p-4`}>
       <TouchableOpacity
         onPress={onSubmit}
         disabled={isDisabled || isSubmitting}
-        className={`flex-1 mr-2 bg-blue-500 p-4 rounded-lg items-center ${
-          isDisabled || isSubmitting ? "opacity-50" : ""
-        }`}
+        style={[
+          tw`flex-1 mr-2 bg-blue-500 p-4 rounded-lg items-center`,
+          (isDisabled || isSubmitting) && tw`opacity-50`
+        ]}
       >
-        <Text className="text-white font-semibold">Submit Scores</Text>
+        <Text style={tw`text-white font-semibold`}>Submit Scores</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         onPress={onViewScorecard}
-        className="flex-1 ml-2 bg-gray-700 p-4 rounded-lg items-center"
+        style={tw`flex-1 ml-2 bg-gray-700 p-4 rounded-lg items-center`}
       >
-        <Text className="text-white font-semibold">View Scorecard</Text>
+        <Text style={tw`text-white font-semibold`}>View Scorecard</Text>
       </TouchableOpacity>
     </View>
   );
 };
+
+export default ScoreSubmitButtons;

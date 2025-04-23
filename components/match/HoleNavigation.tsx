@@ -1,35 +1,39 @@
+// components/ScoreInput/HoleNavigation.tsx
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
+import tw from 'twrnc';
 
 interface HoleNavigationProps {
   currentHole: number;
   onHoleChange: (hole: number) => void;
 }
 
-export const HoleNavigation: React.FC<HoleNavigationProps> = ({
+const HoleNavigation: React.FC<HoleNavigationProps> = ({
   currentHole,
   onHoleChange,
 }) => {
   return (
-    <View className="flex-row items-center justify-between p-4 bg-gray-100">
+    <View style={tw`flex-row items-center justify-between p-4 bg-gray-100`}>
       <TouchableOpacity
         onPress={() => onHoleChange(Math.max(1, currentHole - 1))}
-        className="p-2"
+        style={tw`p-2`}
       >
-        <Text className="text-2xl text-blue-500">←</Text>
+        <Text style={tw`text-2xl text-blue-500`}>←</Text>
       </TouchableOpacity>
 
-      <View className="flex-row items-center">
-        <Text className="text-lg font-semibold">Hole </Text>
-        <Text className="text-lg font-bold">{currentHole}</Text>
+      <View style={tw`flex-row items-center`}>
+        <Text style={tw`text-lg font-semibold`}>Hole </Text>
+        <Text style={tw`text-lg font-bold`}>{currentHole}</Text>
       </View>
 
       <TouchableOpacity
         onPress={() => onHoleChange(Math.min(18, currentHole + 1))}
-        className="p-2"
+        style={tw`p-2`}
       >
-        <Text className="text-2xl text-blue-500">→</Text>
+        <Text style={tw`text-2xl text-blue-500`}>→</Text>
       </TouchableOpacity>
     </View>
   );
 };
+
+export default HoleNavigation;

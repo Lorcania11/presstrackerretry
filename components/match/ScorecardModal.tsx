@@ -1,6 +1,7 @@
 // components/ScoreInput/ScorecardModal.tsx
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import tw from 'twrnc';
 import { Teams, Scores, MatchData } from "./types";
 
 interface ScorecardModalProps {
@@ -9,10 +10,10 @@ interface ScorecardModalProps {
   teams: Teams;
   scores: Scores;
   currentHole: number;
-  match?: MatchData; // Make it optional for now
+  match?: MatchData;
 }
 
-export const ScorecardModal: React.FC<ScorecardModalProps> = ({
+const ScorecardModal: React.FC<ScorecardModalProps> = ({
   visible,
   onClose,
   teams,
@@ -23,23 +24,23 @@ export const ScorecardModal: React.FC<ScorecardModalProps> = ({
   if (!visible) return null;
 
   return (
-    <View className="absolute inset-0 bg-black bg-opacity-50">
-      <View className="m-4 bg-white rounded-lg overflow-hidden">
-        <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
-          <Text className="text-xl font-bold">Scorecard</Text>
+    <View style={tw`absolute inset-0 bg-black bg-opacity-50`}>
+      <View style={tw`m-4 bg-white rounded-lg overflow-hidden`}>
+        <View style={tw`flex-row justify-between items-center p-4 border-b border-gray-200`}>
+          <Text style={tw`text-xl font-bold`}>Scorecard</Text>
           <TouchableOpacity onPress={onClose}>
-            <Text className="text-blue-500">Close</Text>
+            <Text style={tw`text-blue-500`}>Close</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView className="p-4">
-          <View className="flex-row border-b border-gray-200 pb-2">
-            <View className="w-16">
-              <Text className="font-bold">Hole</Text>
+        <ScrollView style={tw`p-4`}>
+          <View style={tw`flex-row border-b border-gray-200 pb-2`}>
+            <View style={tw`w-16`}>
+              <Text style={tw`font-bold`}>Hole</Text>
             </View>
             {Object.entries(teams).map(([teamId, team]) => (
-              <View key={teamId} className="flex-1 items-center">
-                <Text style={{ color: team.color }} className="font-bold">
+              <View key={teamId} style={tw`flex-1 items-center`}>
+                <Text style={[tw`font-bold`, { color: team.color }]}>
                   {team.name}
                 </Text>
               </View>
@@ -49,27 +50,20 @@ export const ScorecardModal: React.FC<ScorecardModalProps> = ({
           {[...Array(18)].map((_, index) => (
             <View
               key={index}
-              className="flex-row py-2"
-              style={{
-                backgroundColor:
-                  index === currentHole - 1 ? "#F2F2F7" : "#ffffff",
-              }}
+              style={[
+                tw`flex-row py-2`,
+                index === currentHole - 1 ? tw`bg-gray-100` : tw`bg-white`
+              ]}
             >
-              <View className="w-16">
+              <View style={tw`w-16`}>
                 <Text>{index + 1}</Text>
               </View>
               {Object.keys(teams).map((teamId) => (
-                <View key={teamId} className="flex-1 items-center">
+                <View key={teamId} style={tw`flex-1 items-center`}>
                   {index + 1 === currentHole ? (
                     <Text>{scores[teamId] || "-"}</Text>
                   ) : (
-                    <Text>
-                      {match && match.holes && match.holes[index]
-                        ? match.holes[index].scores.find(
-                            (s) => s.teamId === teamId.replace("team", "")
-                          )?.score || "-"
-                        : "-"}
-                    </Text>
+                    <Text>-</Text>
                   )}
                 </View>
               ))}
