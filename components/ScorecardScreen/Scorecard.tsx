@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { View, ScrollView } from "react-native";
-import { HoleNavigation } from "./HoleNavigation";
-import { TeamScoreInput } from "./TeamScoreInput";
-import { ScoreSubmitButtons } from "./ScoreSubmitButtons";
+import { HoleNavigation } from "../match/HoleNavigation";
+import { TeamScoreInput } from "../TeamScoreInput";
+import { ScoreSubmitButtons } from "../match/ScoreSubmitButtons";
 import { ScorecardModal } from "./ScorecardModal";
-import { PressModal } from "./PressModal";
-import { Teams, Scores, Press } from "./types";
+import { PressModal } from "../match/PressModal";
+import { Teams, Scores, Press } from "../types";
 
 export const InputDesign: React.FC = () => {
   const [showScorecard, setShowScorecard] = useState(false);

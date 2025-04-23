@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import { Teams } from "./types";
+import { Teams } from "../types";
 
 interface ScorecardModalProps {
   visible: boolean;
