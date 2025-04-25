@@ -1,91 +1,97 @@
-// app/match/[id].tsx
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Alert } from 'react-native';
-import { useRoute } from '@react-navigation/native';
-import { router } from 'expo-router';
-import { useMatches } from '@/hooks/useMatches';
-import InputDesign from '@/components/ScoreInput/InputDesign';
-import { MatchData, Teams } from '@/components/ScoreInput/types';
+// app/match/[id].tsx (modified part)
 
-export default function MatchScreen() {
-  const route = useRoute();
-  const id = route.params?.id || '';
-  const { getMatch, updateMatch } = useMatches();
-  
-  const [match, setMatch] = useState<MatchData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [formattedTeams, setFormattedTeams] = useState<Teams>({});
-  
-  useEffect(() => {
-    const loadMatch = async () => {
-      try {
-        if (id) {
-          const matchData = await getMatch(id.toString());
-          if (matchData) {
-            setMatch(matchData);
-            
-            // Format teams for the InputDesign component
-            const teams: Teams = {};
-            matchData.teams.forEach((team, index) => {
-              const teamId = `team${index + 1}`;
-              teams[teamId] = {
-                name: team.name,
-                initial: team.name.charAt(0).toUpperCase(),
-                color: index === 0 ? '#4CAE4F' : index === 1 ? '#FFC105' : '#F44034',
-              };
-            });
-            
-            setFormattedTeams(teams);
-          } else {
-            throw new Error('Match not found');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading match:', error);
-        Alert.alert('Error', 'Failed to load match data.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+// Add this import
+import ScorecardView from '@/components/ScorecardScreen/ScorecardView';
 
-    loadMatch();
-  }, [id]);
-  
-  const handleUpdateMatch = async (updatedMatch: MatchData) => {
-    try {
-      await updateMatch(updatedMatch);
-      setMatch(updatedMatch);
-      return true;
-    } catch (error) {
-      console.error('Error updating match:', error);
-      Alert.alert('Error', 'Failed to update match');
-      return false;
-    }
-  };
-  
-  if (isLoading || !match) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading match...</Text>
-      </View>
-    );
-  }
+// Inside your MatchScreen component, replace the ScrollView content with:
 
-  return (
-    <View style={styles.container}>
-      <InputDesign 
-        match={match} 
-        formattedTeams={formattedTeams} 
-        onUpdateMatch={handleUpdateMatch}
-        onBack={() => router.back()}
-      />
+<View style={styles.container}>
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <ArrowLeft size={24} color={isDark ? '#FFFFFF' : '#333333'} />
+    </TouchableOpacity>
+    <View style={styles.titleContainer}>
+      <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+        {match.title || 'Golf Match'}
+      </Text>
+      <Text style={styles.subtitle}>
+        {match.teams.map((team: { id: string; name: string }) => team.name).join(' vs ')}
+      </Text>
     </View>
-  );
-}
+    <TouchableOpacity style={styles.shareButton}>
+      <Share2 size={24} color={isDark ? '#FFFFFF' : '#333333'} />
+    </TouchableOpacity>
+  </View>
 
+  <MatchStatus match={match} />
+
+  {/* Toggle for Front/Back 9 */}
+  <View style={styles.toggleContainer}>
+    <TouchableOpacity
+      style={[
+        styles.toggleButton,
+        !showBack9 && styles.toggleButtonActive,
+        { backgroundColor: !showBack9 ? '#4CAF50' : isDark ? '#333333' : '#F5F5F5' }
+      ]}
+      onPress={() => setShowBack9(false)}
+    >
+      <Text 
+        style={[
+          styles.toggleText, 
+          { color: !showBack9 ? '#FFFFFF' : isDark ? '#CCCCCC' : '#666666' }
+        ]}
+      >
+        Front 9
+      </Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        styles.toggleButton,
+        showBack9 && styles.toggleButtonActive,
+        { backgroundColor: showBack9 ? '#4CAF50' : isDark ? '#333333' : '#F5F5F5' }
+      ]}
+      onPress={() => setShowBack9(true)}
+    >
+      <Text 
+        style={[
+          styles.toggleText, 
+          { color: showBack9 ? '#FFFFFF' : isDark ? '#CCCCCC' : '#666666' }
+        ]}
+      >
+        Back 9
+      </Text>
+    </TouchableOpacity>
+  </View>
+
+  {/* New Scorecard View Component */}
+  <ScorecardView 
+    teams={match.teams} 
+    showBack9={showBack9} 
+    matchTitle={match.title || 'Scorecard'}
+  />
+</View>
+
+// Add these additional styles to your existing styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
+  // ... existing styles
+  
+  toggleContainer: {
+    flexDirection: 'row',
+    padding: 8,
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? '#333333' : '#EEEEEE',
+  },
+  toggleButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 8,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  toggleText: {
+    fontWeight: '600',
   },
 });
