@@ -48,6 +48,8 @@
     "twrnc": "^4.6.1"
   },
   "devDependencies": {
-    "@react-native-community/cli": "latest"
+    "@react-native-community/cli": "latest",
+    "typescript": "^5.3.3",
+    "@types/react": "~18.3.12"
   }
 }
