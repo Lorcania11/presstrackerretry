@@ -11,8 +11,24 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <MatchProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="+not-found" />
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="match/[id]" 
+            options={{ 
+              headerShown: false,
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }} 
+          />
+          <Stack.Screen 
+            name="match/press-log/[id]" 
+            options={{ 
+              headerShown: false,
+              presentation: 'card',
+              animation: 'slide_from_bottom',
+            }} 
+          />
         </Stack>
         <StatusBar style="auto" />
       </MatchProvider>
