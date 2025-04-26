@@ -17,9 +17,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
-  ],
-  "plugins": [
-    "react-native-reanimated/plugin",
-    "nativewind/babel"
   ]
 }
