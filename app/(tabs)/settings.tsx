@@ -1,5 +1,5 @@
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, Switch, TouchableOpacity, Alert, useColorScheme } from 'react-native';
-import { useState } from 'react';
 import { useMatches } from '@/hooks/useMatches';
 import { Info, Moon, Share, Trash2, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 

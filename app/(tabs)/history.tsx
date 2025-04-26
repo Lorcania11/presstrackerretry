@@ -1,8 +1,24 @@
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, useColorScheme } from 'react-native';
-import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
 import { Calendar, Search } from 'lucide-react-native';
 import { useMatches } from '@/hooks/useMatches';
+
+interface MatchTeam {
+  id: string;
+  name: string;
+  color?: string;
+  initial?: string;
+}
+
+interface Match {
+  id: string;
+  title: string;
+  teams: MatchTeam[];
+  format?: 'front' | 'back' | 'total';
+  createdAt: string;
+  isComplete: boolean;
+}
 
 export default function HistoryScreen() {
   const colorScheme = useColorScheme();
@@ -24,13 +40,13 @@ export default function HistoryScreen() {
     router.push(`/match/${matchId}`);
   };
 
-  const filteredMatches = matches.filter(match => {
+  const filteredMatches = matches.filter((match: Match) => {
     if (!searchQuery) return true;
     
     const query = searchQuery.toLowerCase();
     return (
       (match.title && match.title.toLowerCase().includes(query)) ||
-      match.teams.some(team => team.name.toLowerCase().includes(query))
+      match.teams.some((team: MatchTeam) => team.name.toLowerCase().includes(query))
     );
   });
 
@@ -65,7 +81,7 @@ export default function HistoryScreen() {
     };
   };
 
-  const renderMatchItem = ({ item }) => {
+  const renderMatchItem = ({ item }: { item: Match }) => {
     const matchDate = new Date(item.createdAt);
     
     return (
@@ -91,7 +107,7 @@ export default function HistoryScreen() {
         </View>
         
         <Text style={[styles.teamsText, { color: isDark ? '#CCCCCC' : '#666666' }]}>
-          {item.teams.map(team => team.name).join(' vs ')}
+          {item.teams.map((team: MatchTeam) => team.name).join(' vs ')}
         </Text>
         
         <View style={styles.matchFooter}>

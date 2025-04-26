@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import type { RelativePathString } from 'expo-router';
 import {
   Calendar,
   TrendingUp,
@@ -83,15 +84,15 @@ export default function HomeScreen() {
       ...styles.card,
       backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF'
     }),
-    text: (baseStyle) => ({
+    text: (baseStyle: any) => ({
       ...baseStyle,
       color: isDark ? '#FFFFFF' : '#333333'
     }),
-    subText: (baseStyle) => ({
+    subText: (baseStyle: any) => ({
       ...baseStyle,
       color: isDark ? '#CCCCCC' : '#666666'
     }),
-    actionCard: (color) => ({
+    actionCard: (color: string) => ({
       ...styles.quickActionCard,
       backgroundColor: isDark ? '#1E1E1E' : color
     })
@@ -100,7 +101,7 @@ export default function HomeScreen() {
   const handleNavigate = (route: string, title: string) => {
     if (route) {
       try {
-        router.push(route);
+        router.push(route as RelativePathString);
       } catch (error) {
         console.error(`Navigation error for route ${route}:`, error);
         Alert.alert('Navigation Error', `Unable to navigate to ${title}. This feature may not be available yet.`);

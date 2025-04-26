@@ -55,9 +55,10 @@ export default function ScoreInputModal({
   const handleSave = () => {
     // Convert string inputs to numbers
     const numericScores = Object.entries(scoreInputs).reduce((obj, [teamId, scoreStr]) => {
-      obj[teamId] = scoreStr ? parseInt(scoreStr, 10) : null;
+      // Use 0 as default value if score is empty or null
+      obj[teamId] = scoreStr ? parseInt(scoreStr, 10) : 0;
       return obj;
-    }, {} as { [teamId: string]: number | null });
+    }, {} as { [teamId: string]: number });
     
     onSaveScores(numericScores);
     onClose();

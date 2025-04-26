@@ -1,5 +1,5 @@
 // app/match/[id].tsx
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -13,9 +13,33 @@ import { ArrowLeft, Share2, List } from 'lucide-react-native';
 import { useMatches } from '@/hooks/useMatches';
 import { useMatchContext } from '@/context/MatchContext';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
-import StepPressModal from '@/components/match/StepPressModal';
 import ScoreInputModal from '@/components/match/ScoreInputModal';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
+import { MatchData } from '@/components/match/types';
+
+// Extended MatchTeam interface to include color and initial
+interface ExtendedMatchTeam {
+  id: string;
+  name: string;
+  scores: (number | null)[];
+  color: string;
+  initial: string;
+}
+
+// Extended Match interface to match the expected type in MatchContext
+interface Match extends Omit<MatchData, 'teams'> {
+  playFormat: "match" | "stroke";
+  createdAt: string;
+  isComplete: boolean;
+  teams: ExtendedMatchTeam[];
+}
+
+// Temporary component until StepPressModal is created
+const StepPressModal = ({ visible, onClose, onSubmit, teams, gameFormats, currentHole }: any) => (
+  <View>
+    <Text>Press Modal Placeholder</Text>
+  </View>
+);
 
 export default function MatchScreen() {
   const colorScheme = useColorScheme();
@@ -24,7 +48,7 @@ export default function MatchScreen() {
   const { getMatch, updateMatch } = useMatches();
   const { setCurrentMatch, showBack9, setShowBack9 } = useMatchContext();
 
-  const [match, setMatch] = useState(null);
+  const [match, setMatch] = useState<Match | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentHole, setCurrentHole] = useState(1);
   const [showPressModal, setShowPressModal] = useState(false);
@@ -37,7 +61,7 @@ export default function MatchScreen() {
           const matchData = await getMatch(id.toString());
           if (matchData) {
             // Add team colors and initials if they don't exist
-            const teamsWithColors = matchData.teams.map((team, index) => {
+            const teamsWithColors = matchData.teams.map((team: any, index: number) => {
               const teamColors = ['#4CAE4F', '#FFC105', '#F44034'];
               return {
                 ...team,
@@ -57,7 +81,7 @@ export default function MatchScreen() {
             
             // Find first incomplete hole
             if (matchData.holes) {
-              const firstIncompleteHole = matchData.holes.find(hole => !hole.isComplete);
+              const firstIncompleteHole = matchData.holes.find((hole: any) => !hole.isComplete);
               if (firstIncompleteHole) {
                 setCurrentHole(firstIncompleteHole.number);
                 // Set showBack9 based on current hole
@@ -79,7 +103,7 @@ export default function MatchScreen() {
     loadMatch();
   }, [id]);
 
-  const handleSwipe = (direction) => {
+  const handleSwipe = (direction: 'left' | 'right') => {
     if (direction === 'left' && !showBack9) {
       setShowBack9(true);
     } else if (direction === 'right' && showBack9) {
@@ -87,12 +111,12 @@ export default function MatchScreen() {
     }
   };
 
-  const handleAddPress = (selectedPresses) => {
+  const handleAddPress = (selectedPresses: Array<{from: string, to: string, type: string}>) => {
     // Process and add selected presses
-    selectedPresses.forEach(press => {
+    selectedPresses.forEach((press) => {
       const updatedMatch = {
-        ...match,
-        presses: [...match.presses, {
+        ...match!,
+        presses: [...match!.presses, {
           id: Math.random().toString(36).substring(2, 9),
           fromTeamId: press.from,
           toTeamId: press.to,
@@ -108,8 +132,8 @@ export default function MatchScreen() {
     setShowPressModal(false);
   };
 
-  const handleSaveScores = async (scores) => {
-    const updatedTeams = match.teams.map(team => {
+  const handleSaveScores = async (scores: { [teamId: string]: number }) => {
+    const updatedTeams = match!.teams.map((team: ExtendedMatchTeam) => {
       const newScores = [...team.scores];
       if (scores[team.id] !== undefined) {
         newScores[currentHole - 1] = scores[team.id];
@@ -117,13 +141,13 @@ export default function MatchScreen() {
       return { ...team, scores: newScores };
     });
     
-    const updatedMatch = { ...match, teams: updatedTeams };
+    const updatedMatch = { ...match!, teams: updatedTeams };
     setMatch(updatedMatch);
     setCurrentMatch(updatedMatch);
     await updateMatch(updatedMatch);
     
     // Automatically move to next hole if all teams have scores for current hole
-    const allTeamsHaveScores = updatedTeams.every(team => 
+    const allTeamsHaveScores = updatedTeams.every((team: ExtendedMatchTeam) => 
       team.scores[currentHole - 1] !== null && team.scores[currentHole - 1] !== undefined
     );
     
