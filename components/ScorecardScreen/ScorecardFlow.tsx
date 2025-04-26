@@ -215,10 +215,215 @@ export default function ScorecardFlow({
 const styles = StyleSheet.create({
   scorecardFlowContainer: {
     flex: 1,
-    // Other styles...
+    backgroundColor: '#FFFFFF',
   },
   navigationBar: {
-    // Styles...
+    width: '100%',
+    height: 98,
+    position: 'absolute',
+    top: 0,
+    zIndex: 1,
   },
-  // Define all the other styles used in your component
+  backgroundforsizingandlayoutfornavigationbarandheadersection: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  titleScorecardandPressLogButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    height: 44,
+    marginTop: 44,
+    zIndex: 2,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  chevron: {
+    fontSize: 18,
+    color: '#007AFF',
+    marginRight: 2,
+  },
+  label: {
+    fontSize: 17,
+    color: '#007AFF',
+  },
+  _title: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  pressLogButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    position: 'relative',
+  },
+  buttonBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000000',
+    borderRadius: 16,
+  },
+  pressLog: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginRight: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  savetimeiconsvg: {
+    marginLeft: 2,
+  },
+  gridforScorecardforVisualSeparation: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+  },
+  linebreakersandbackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  verticallinetoseparateid1team1andid2team2: {
+    position: 'absolute',
+    left: 135,
+    top: 0,
+  },
+  verticallinetoseparateid2team2andifapplicableid3team3: {
+    position: 'absolute',
+    left: 270,
+    top: 0,
+  },
+  teamsLayout: {
+    flexDirection: 'row',
+    marginTop: 120,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    justifyContent: 'space-between',
+    zIndex: 2,
+  },
+  teamContainer: {
+    alignItems: 'center',
+    width: 100,
+  },
+  teamCircleContainer: {
+    position: 'relative',
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  teamInitial: {
+    position: 'absolute',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  teamName: {
+    fontSize: 14,
+    color: '#000000',
+    marginTop: 8,
+    textAlign: 'center',
+    maxWidth: 80,
+  },
+  holeNumbersContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(240, 240, 240, 0.5)',
+    zIndex: 2,
+  },
+  holeLabel: {
+    width: 40,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  holeNumber: {
+    width: 28,
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#000000',
+  },
+  totalLabel: {
+    width: 50,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  rangeLabel: {
+    width: 50,
+    fontSize: 12,
+    color: '#777777',
+    textAlign: 'center',
+  },
+  scoreDisplayContainer: {
+    flexDirection: 'column',
+    zIndex: 2,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  scoreCell: {
+    width: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreText: {
+    fontSize: 16,
+    color: '#000000',
+  },
+  runningTotalsContainer: {
+    flexDirection: 'column',
+    zIndex: 2,
+    backgroundColor: 'rgba(240, 240, 240, 0.5)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingVertical: 4,
+  },
+  sectionTotal: {
+    width: 50,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  grandTotal: {
+    width: 50,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  pressNotificationContainer: {
+    position: 'absolute',
+    top: 200,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  pressIndicator: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  }
 });

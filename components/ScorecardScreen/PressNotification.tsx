@@ -14,12 +14,17 @@ interface PressNotificationProps {
   presses: Press[];
   matchId: string;
   showBack9?: boolean;
+  teams?: Array<{
+    id: string;
+    color: string;
+  }>;
 }
 
 const PressNotification: React.FC<PressNotificationProps> = ({ 
   presses, 
   matchId,
-  showBack9 = false 
+  showBack9 = false,
+  teams = [] 
 }) => {
   // Filter presses based on front 9 or back 9
   const filteredPresses = presses.filter(press => {
@@ -28,7 +33,7 @@ const PressNotification: React.FC<PressNotificationProps> = ({
   });
 
   // Define team colors (fallback if not provided in press object)
-  const teamColors = {
+  const teamColors: Record<string, string> = {
     '1': '#4CAE4F',  // Green
     '2': '#FFC105',  // Yellow
     '3': '#F44034',  // Red
@@ -42,8 +47,10 @@ const PressNotification: React.FC<PressNotificationProps> = ({
         const rowIndex = press.holeIndex - holeOffset;
         const columnOffset = 10; // Spacing between dots
         
-        // Use team ID to determine color (fallback to default if not present)
-        const color = teamColors[press.fromTeamId] || '#000000';
+        // Look for team color first in teams array, then fallback to teamColors
+        const teamColor = teams.find(t => t.id === press.fromTeamId)?.color || 
+                         teamColors[press.fromTeamId] || 
+                         '#000000';
         
         return (
           <View
@@ -51,7 +58,7 @@ const PressNotification: React.FC<PressNotificationProps> = ({
             style={[
               styles.pressIndicator,
               {
-                backgroundColor: color,
+                backgroundColor: teamColor,
                 top: rowIndex * 41,  // Position based on hole number
                 right: columnOffset * (index % 3),  // Stagger horizontally to avoid overlap
               }
