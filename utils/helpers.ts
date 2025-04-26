@@ -1,12 +1,82 @@
+// Define interfaces for type safety
+interface MatchTeam {
+  id: string;
+  name: string;
+  scores?: (number | null)[];
+  color?: string;
+  initial?: string;
+}
+
+interface HoleScore {
+  teamId: string;
+  score: number | null;
+}
+
+interface Press {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  holeIndex: number;
+  pressType: string;
+  holeStarted?: number;
+  amount?: number;
+}
+
+interface Hole {
+  number: number;
+  scores: HoleScore[];
+  presses: Press[];
+  isComplete: boolean;
+}
+
+interface MatchPlayResult {
+  status: string;
+  winner: string | null;
+  details: {
+    team1Wins: number;
+    team2Wins: number;
+    halvedHoles: number;
+    completedHoles: number;
+    holesRemaining: number;
+    isMatchOver: boolean;
+  } | string;
+}
+
+interface StrokePlayTeamResult {
+  teamId: string;
+  teamName: string;
+  totalScore: number;
+  completedHoles: number;
+  average: number;
+  position?: number;
+}
+
+interface StrokePlayResult {
+  status: string;
+  winner: string | null;
+  details: StrokePlayTeamResult[];
+}
+
+interface HoleResult {
+  winner?: string | null;
+  status?: string;
+  difference?: number;
+}
+
+interface PressResult extends Press {
+  status: string;
+  winner: string | null;
+}
+
 export const generateUniqueId = (): string => {
   return Math.random().toString(36).substring(2, 15) + 
     Math.random().toString(36).substring(2, 15);
 };
 
-export const calculateMatchPlay = (teams, holes) => {
+export const calculateMatchPlay = (teams: MatchTeam[], holes: Hole[]): MatchPlayResult => {
   // This is a simplified match play calculation
   // Assuming only 2 teams for match play
-  if (teams.length !== 2) return { status: 'Invalid', details: 'Match play requires exactly 2 teams' };
+  if (teams.length !== 2) return { status: 'Invalid', details: 'Match play requires exactly 2 teams', winner: null };
   
   const team1 = teams[0];
   const team2 = teams[1];
@@ -16,13 +86,16 @@ export const calculateMatchPlay = (teams, holes) => {
   let halvedHoles = 0;
   let completedHoles = 0;
   
-  holes.forEach(hole => {
+  holes.forEach((hole: Hole) => {
     if (hole.isComplete) {
       completedHoles++;
-      const team1Score = hole.scores.find(s => s.teamId === team1.id)?.score;
-      const team2Score = hole.scores.find(s => s.teamId === team2.id)?.score;
+      const team1ScoreObj = hole.scores.find((s: HoleScore) => s.teamId === team1.id);
+      const team2ScoreObj = hole.scores.find((s: HoleScore) => s.teamId === team2.id);
+      const team1Score = team1ScoreObj?.score;
+      const team2Score = team2ScoreObj?.score;
       
-      if (team1Score !== null && team2Score !== null) {
+      if (team1Score !== null && team1Score !== undefined && 
+          team2Score !== null && team2Score !== undefined) {
         if (team1Score < team2Score) {
           team1Wins++;
         } else if (team2Score < team1Score) {
@@ -86,15 +159,15 @@ export const calculateMatchPlay = (teams, holes) => {
   };
 };
 
-export const calculateStrokePlay = (teams, holes) => {
-  const results = teams.map(team => {
-    const totalScore = holes.reduce((total, hole) => {
-      const score = hole.scores.find(s => s.teamId === team.id)?.score || 0;
+export const calculateStrokePlay = (teams: MatchTeam[], holes: Hole[]): StrokePlayResult => {
+  const results: StrokePlayTeamResult[] = teams.map((team: MatchTeam) => {
+    const totalScore = holes.reduce((total: number, hole: Hole) => {
+      const score = hole.scores.find((s: HoleScore) => s.teamId === team.id)?.score || 0;
       return total + score;
     }, 0);
     
-    const completedHoles = holes.filter(hole => 
-      hole.scores.find(s => s.teamId === team.id)?.score !== null
+    const completedHoles = holes.filter((hole: Hole) => 
+      hole.scores.find((s: HoleScore) => s.teamId === team.id)?.score !== null
     ).length;
     
     return {
@@ -104,13 +177,13 @@ export const calculateStrokePlay = (teams, holes) => {
       completedHoles,
       average: completedHoles > 0 ? totalScore / completedHoles : 0
     };
-  }).sort((a, b) => a.totalScore - b.totalScore);
+  }).sort((a: StrokePlayTeamResult, b: StrokePlayTeamResult) => a.totalScore - b.totalScore);
   
   // Add position and determine winner
   let currentPosition = 1;
   let currentScore = results[0].totalScore;
   
-  results.forEach((result, index) => {
+  results.forEach((result: StrokePlayTeamResult, index: number) => {
     if (result.totalScore > currentScore) {
       currentPosition = index + 1;
       currentScore = result.totalScore;
@@ -137,13 +210,14 @@ export const calculateStrokePlay = (teams, holes) => {
   };
 };
 
-export const calculateHoleResult = (hole, teams, playFormat) => {
+export const calculateHoleResult = (hole: Hole, teams: MatchTeam[], playFormat: "match" | "stroke"): HoleResult | null => {
   if (!hole.isComplete || teams.length !== 2) return null;
   
-  const team1Score = hole.scores.find(s => s.teamId === teams[0].id)?.score;
-  const team2Score = hole.scores.find(s => s.teamId === teams[1].id)?.score;
+  const team1Score = hole.scores.find((s: HoleScore) => s.teamId === teams[0].id)?.score;
+  const team2Score = hole.scores.find((s: HoleScore) => s.teamId === teams[1].id)?.score;
   
-  if (team1Score === null || team2Score === null) return null;
+  if (team1Score === null || team1Score === undefined || 
+      team2Score === null || team2Score === undefined) return null;
   
   if (playFormat === 'match') {
     if (team1Score < team2Score) {
@@ -159,34 +233,40 @@ export const calculateHoleResult = (hole, teams, playFormat) => {
   }
 };
 
-export const calculatePressResults = (teams, holes, playFormat) => {
+export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFormat: "match" | "stroke"): PressResult[] => {
   // Only calculate between 2 teams
   if (teams.length !== 2) return [];
   
   const team1 = teams[0];
   const team2 = teams[1];
   
-  const presses = holes.flatMap(hole => 
-    hole.presses.map(press => ({
+  const presses = holes.flatMap((hole: Hole) => 
+    hole.presses.map((press: Press) => ({
       ...press,
       holeStarted: hole.number,
     }))
   );
   
-  return presses.map(press => {
+  return presses.map((press: Press) => {
+    // Ensure holeStarted is defined with a safe default value if undefined
+    const holeStarted = press.holeStarted || 1;
+    
     const relevantHoles = holes.filter(
-      hole => hole.number >= press.holeStarted && hole.isComplete
+      (hole: Hole) => hole.number >= holeStarted && hole.isComplete
     );
     
     if (playFormat === 'match') {
       let team1Wins = 0;
       let team2Wins = 0;
       
-      relevantHoles.forEach(hole => {
-        const team1Score = hole.scores.find(s => s.teamId === team1.id)?.score;
-        const team2Score = hole.scores.find(s => s.teamId === team2.id)?.score;
+      relevantHoles.forEach((hole: Hole) => {
+        const team1ScoreObj = hole.scores.find((s: HoleScore) => s.teamId === team1.id);
+        const team2ScoreObj = hole.scores.find((s: HoleScore) => s.teamId === team2.id);
+        const team1Score = team1ScoreObj?.score;
+        const team2Score = team2ScoreObj?.score;
         
-        if (team1Score !== null && team2Score !== null) {
+        if (team1Score !== null && team1Score !== undefined && 
+            team2Score !== null && team2Score !== undefined) {
           if (team1Score < team2Score) team1Wins++;
           else if (team2Score < team1Score) team2Wins++;
         }
@@ -215,13 +295,13 @@ export const calculatePressResults = (teams, holes, playFormat) => {
       
     } else {
       // For stroke play, compare total strokes
-      const team1Total = relevantHoles.reduce((total, hole) => {
-        const score = hole.scores.find(s => s.teamId === team1.id)?.score || 0;
+      const team1Total = relevantHoles.reduce((total: number, hole: Hole) => {
+        const score = hole.scores.find((s: HoleScore) => s.teamId === team1.id)?.score || 0;
         return total + score;
       }, 0);
       
-      const team2Total = relevantHoles.reduce((total, hole) => {
-        const score = hole.scores.find(s => s.teamId === team2.id)?.score || 0;
+      const team2Total = relevantHoles.reduce((total: number, hole: Hole) => {
+        const score = hole.scores.find((s: HoleScore) => s.teamId === team2.id)?.score || 0;
         return total + score;
       }, 0);
       

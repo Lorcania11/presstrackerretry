@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { generateUniqueId } from '@/utils/helpers';
 import { useMatches } from '@/hooks/useMatches';
 import { ChevronDown, ChevronUp, Users, DollarSign, Flag, X } from 'lucide-react-native';
-import { useMatchContext } from '@/context/MatchContext';
+import { useMatchContext, Team } from '@/context/MatchContext';
 
 interface GameFormat {
   id: string;
@@ -25,6 +25,13 @@ interface GameFormat {
   enabled: boolean;
 }
 
+interface TeamInput {
+  id: string;
+  name: string;
+  placeholder: string;
+  players: any[];
+}
+
 export default function NewMatchScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -32,7 +39,7 @@ export default function NewMatchScreen() {
   const { setTeams } = useMatchContext();
   
   const [title, setTitle] = useState('');
-  const [teams, setTeamsState] = useState([
+  const [teams, setTeamsState] = useState<TeamInput[]>([
     { id: '1', name: '', placeholder: 'Team 1', players: [] },
     { id: '2', name: '', placeholder: 'Team 2', players: [] },
   ]);
@@ -42,7 +49,7 @@ export default function NewMatchScreen() {
     { id: 'back', type: 'back', label: 'Back 9', betAmount: '10', enabled: false },
     { id: 'total', type: 'total', label: 'Full 18', betAmount: '10', enabled: true },
   ]);
-  const [playFormat, setPlayFormat] = useState('stroke'); // 'stroke', 'match'
+  const [playFormat, setPlayFormat] = useState<"stroke" | "match">('stroke'); // Changed to union type
   const [enablePresses, setEnablePresses] = useState(true);
   const [setupExpanded, setSetupExpanded] = useState(true);
   const [formatExpanded, setFormatExpanded] = useState(true);
@@ -128,21 +135,25 @@ export default function NewMatchScreen() {
       return;
     }
 
-    // Ensure all teams have scores initialized
-    const initializedTeams = teams.map(team => ({
+    // Add team colors and initials based on team name
+    const teamColors = ['#4CAE4F', '#FFC105', '#F44034'];
+    
+    // Ensure all teams have scores, colors, and initials initialized
+    const initializedTeams = teams.map((team, index) => ({
       ...team,
+      name: team.name || team.placeholder,
       scores: Array(18).fill(null), // Initialize scores for 18 holes
+      color: teamColors[index % teamColors.length],
+      initial: (team.name || team.placeholder).charAt(0).toUpperCase(),
     }));
 
-    setTeams(initializedTeams); // Update teams in MatchContext
+    setTeams(initializedTeams as Team[]); // Update teams in MatchContext with proper casting
 
     const newMatch = {
       id: generateUniqueId(),
       title: title || `Match ${new Date().toLocaleDateString()}`,
-      teams: initializedTeams.map(team => ({
-        ...team,
-        name: team.name || team.placeholder,
-      })),
+      teams: initializedTeams,
+      presses: [], // Add empty presses array to match the Match interface
       gameFormats: enabledFormats.map(format => ({
         type: format.type,
         betAmount: parseFloat(format.betAmount) || 0,
