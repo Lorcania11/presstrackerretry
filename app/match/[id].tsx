@@ -7,15 +7,18 @@ import {
   TouchableOpacity, 
   useColorScheme,
   Alert,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Share2, List } from 'lucide-react-native';
+import { ArrowLeft, Share2, List, Eye, X } from 'lucide-react-native';
 import { useMatches } from '@/hooks/useMatches';
 import { useMatchContext } from '@/context/MatchContext';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
 import ScoreInputModal from '@/components/match/ScoreInputModal';
 import { GestureHandlerRootView, Swipeable } from 'react-native-gesture-handler';
 import { MatchData } from '@/components/match/types';
+import { calculateMatchPlay, calculateStrokePlay } from '@/utils/helpers';
 
 // Extended MatchTeam interface to include color and initial
 interface ExtendedMatchTeam {
@@ -53,6 +56,7 @@ export default function MatchScreen() {
   const [currentHole, setCurrentHole] = useState(1);
   const [showPressModal, setShowPressModal] = useState(false);
   const [showScoreModal, setShowScoreModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   useEffect(() => {
     const loadMatch = async () => {
@@ -162,6 +166,98 @@ export default function MatchScreen() {
     }
   };
 
+  const renderMatchPreview = () => {
+    if (!match) return null;
+
+    const result = match.playFormat === 'match' 
+      ? calculateMatchPlay(match.teams, match.holes || [])
+      : calculateStrokePlay(match.teams, match.holes || []);
+
+    return (
+      <Modal
+        visible={showPreviewModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowPreviewModal(false)}
+      >
+        <View style={[styles.modalContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.9)' }]}>
+          <View style={[styles.previewCard, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+            <View style={styles.previewHeader}>
+              <Text style={[styles.previewTitle, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                Match Preview
+              </Text>
+              <TouchableOpacity onPress={() => setShowPreviewModal(false)}>
+                <X size={24} color={isDark ? '#FFFFFF' : '#333333'} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.previewContent}>
+              <Text style={[styles.statusText, { color: isDark ? '#4CAF50' : '#4CAF50' }]}>
+                {result.status}
+              </Text>
+              
+              <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                Team Scores
+              </Text>
+              
+              {match.teams.map(team => {
+                const completedHoles = team.scores.filter(score => score !== null).length;
+                const totalScore = team.scores.reduce((sum, score) => sum + (score || 0), 0);
+                
+                return (
+                  <View key={team.id} style={styles.teamScoreRow}>
+                    <View style={[styles.teamColorIndicator, { backgroundColor: team.color }]} />
+                    <Text style={[styles.teamName, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                      {team.name}
+                    </Text>
+                    <Text style={[styles.scoreText, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+                      {totalScore} ({completedHoles}/18 holes)
+                    </Text>
+                  </View>
+                );
+              })}
+              
+              <Text style={[styles.sectionTitle, { color: isDark ? '#FFFFFF' : '#333333', marginTop: 16 }]}>
+                Presses ({match.presses.length})
+              </Text>
+              
+              {match.presses.length > 0 ? (
+                match.presses.map((press, index) => {
+                  const fromTeam = match.teams.find(t => t.id === press.fromTeamId);
+                  const toTeam = match.teams.find(t => t.id === press.toTeamId);
+                  
+                  return (
+                    <View key={index} style={styles.pressItem}>
+                      <Text style={[styles.pressText, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                        {fromTeam?.name} → {toTeam?.name}
+                      </Text>
+                      <Text style={[styles.pressDetail, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+                        Hole {press.holeIndex + 1}, {press.pressType === 'front' ? 'Front 9' : 
+                         press.pressType === 'back' ? 'Back 9' : 'Total 18'} game
+                      </Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <Text style={[styles.emptyText, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+                  No presses added yet
+                </Text>
+              )}
+              
+            </ScrollView>
+            
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowPreviewModal(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   if (isLoading || !match) {
     return (
       <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F5F5F5' }]}>
@@ -186,7 +282,13 @@ export default function MatchScreen() {
             </Text>
           </View>
           <TouchableOpacity 
-            style={styles.shareButton} 
+            style={styles.headerButton} 
+            onPress={() => setShowPreviewModal(true)}
+          >
+            <Eye size={24} color={isDark ? '#FFFFFF' : '#333333'} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.headerButton} 
             onPress={() => router.push(`/match/press-log/${id}`)}
           >
             <List size={24} color={isDark ? '#FFFFFF' : '#333333'} />
@@ -226,6 +328,8 @@ export default function MatchScreen() {
           </TouchableOpacity>
         </View>
 
+        {renderMatchPreview()}
+        
         {showPressModal && (
           <StepPressModal
             visible={showPressModal}
@@ -275,7 +379,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888888',
   },
-  shareButton: {
+  headerButton: {
     padding: 8,
   },
   swipeIndicator: {
@@ -303,6 +407,85 @@ const styles = StyleSheet.create({
     backgroundColor: '#2196F3',
   },
   actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewCard: {
+    width: '90%',
+    borderRadius: 8,
+    padding: 16,
+    elevation: 4,
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  previewTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  previewContent: {
+    maxHeight: '70%',
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  teamScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  teamColorIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  teamName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  scoreText: {
+    fontSize: 14,
+  },
+  pressItem: {
+    marginBottom: 8,
+  },
+  pressText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  pressDetail: {
+    fontSize: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  closeButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#2196F3',
+    alignItems: 'center',
+  },
+  closeButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 16,
