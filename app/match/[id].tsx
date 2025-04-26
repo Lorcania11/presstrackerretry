@@ -181,6 +181,7 @@ export default function MatchScreen() {
             presses={match.presses}
             currentHole={currentHole}
             showBack9={showBack9}
+            matchId={match.id}
             onBack={() => router.back()}
           />
         </Swipeable>
