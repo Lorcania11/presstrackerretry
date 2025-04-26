@@ -39,16 +39,16 @@ export default function ScorecardFlow({
   // Calculate running totals for front 9, back 9, and total
   const totals = teams.map(team => {
     const front9 = team.scores.slice(0, 9).reduce((sum, score) => 
-      sum + (score !== null ? score : 0), 0);
+      (sum || 0) + (score !== null ? score : 0), 0);
     
     const back9 = team.scores.slice(9, 18).reduce((sum, score) => 
-      sum + (score !== null ? score : 0), 0);
+      (sum || 0) + (score !== null ? score : 0), 0);
     
     return {
       teamId: team.id,
-      front9,
-      back9,
-      total: front9 + back9
+      front9: front9 || 0,
+      back9: back9 || 0,
+      total: (front9 || 0) + (back9 || 0)
     };
   });
 
@@ -211,3 +211,14 @@ export default function ScorecardFlow({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  scorecardFlowContainer: {
+    flex: 1,
+    // Other styles...
+  },
+  navigationBar: {
+    // Styles...
+  },
+  // Define all the other styles used in your component
+});
