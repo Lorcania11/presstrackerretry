@@ -20,6 +20,6 @@
   "react-native-screens": "~3.29.0"
 },
   "devDependencies": {
-  "@react-native-community/cli": "latest",
+  "@react-native-community/cli": "latest"
 }
 }
