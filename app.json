@@ -1,34 +1,12 @@
 {
   "expo": {
-    "name": "presstracker",
-    "slug": "presstracker",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "jsEngine": "hermes",
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "jsEngine": "jsc"
-    },
+    "scheme": "PressTracker",
     "web": {
-      "bundler": "metro",
-      "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "bundler": "metro"
     },
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "expo-router": {
-        "appRoot": "./app"
-      }
     }
   }
 }
