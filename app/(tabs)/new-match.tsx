@@ -365,11 +365,11 @@ export default function NewMatchScreen() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={getSectionStyle()} 
-          onPress={() => setBettingExpanded(!bettingExpanded)}
-        >
-          <View style={styles.sectionHeader}>
+        <View style={getSectionStyle()}>
+          <Pressable 
+            style={styles.sectionHeader}
+            onPress={() => setBettingExpanded(!bettingExpanded)}
+          >
             <View style={styles.sectionTitleContainer}>
               <DollarSign size={20} color={isDark ? '#4CAF50' : '#4CAF50'} />
               <Text style={getLabelStyle()}>Betting Options</Text>
@@ -379,7 +379,7 @@ export default function NewMatchScreen() {
             ) : (
               <ChevronDown size={20} color={isDark ? '#FFFFFF' : '#333333'} />
             )}
-          </View>
+          </Pressable>
           
           {bettingExpanded && (
             <View style={styles.sectionContent}>
@@ -422,7 +422,7 @@ export default function NewMatchScreen() {
               )}
             </View>
           )}
-        </TouchableOpacity>
+        </View>
         
         <TouchableOpacity
           style={styles.createButton}
