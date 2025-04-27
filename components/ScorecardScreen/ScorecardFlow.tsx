@@ -1,7 +1,7 @@
 // components/ScorecardScreen/ScorecardFlow.tsx
 import React from 'react';
-import { View, Text, ImageBackground, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { Svg, Rect, Line, Path, Circle } from 'react-native-svg';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { Svg, Line, Circle } from 'react-native-svg';
 import { router } from 'expo-router';
 
 interface ScorecardFlowProps {
@@ -22,7 +22,7 @@ interface ScorecardFlowProps {
   currentHole: number;
   showBack9: boolean;
   onBack?: () => void;
-  matchId: string; // Add this
+  matchId: string;
 }
 
 export default function ScorecardFlow({
@@ -31,24 +31,23 @@ export default function ScorecardFlow({
   currentHole,
   showBack9,
   onBack,
-  matchId, // Use this
+  matchId,
 }: ScorecardFlowProps) {
-  const { width } = Dimensions.get('window');
-  const adjustedWidth = Math.min(width, 402);
+  const { width, height } = Dimensions.get('window');
   
   // Calculate running totals for front 9, back 9, and total
   const totals = teams.map(team => {
-    const front9 = team.scores.slice(0, 9).reduce((sum, score) => 
-      (sum || 0) + (score !== null ? score : 0), 0);
+    const front9 = team.scores.slice(0, 9).reduce((sum: number, score) => 
+      sum + (score !== null ? score : 0), 0);
     
-    const back9 = team.scores.slice(9, 18).reduce((sum, score) => 
-      (sum || 0) + (score !== null ? score : 0), 0);
+    const back9 = team.scores.slice(9, 18).reduce((sum: number, score) => 
+      sum + (score !== null ? score : 0), 0);
     
     return {
       teamId: team.id,
-      front9: front9 || 0,
-      back9: back9 || 0,
-      total: (front9 || 0) + (back9 || 0)
+      front9,
+      back9,
+      total: front9 + back9
     };
   });
 
@@ -70,72 +69,29 @@ export default function ScorecardFlow({
   };
 
   return (
-    <View style={[styles.scorecardFlowContainer, { width: adjustedWidth }]}>
-      {/* Navigation Bar */}
-      <View style={styles.navigationBar}>
-        <Svg style={styles.backgroundforsizingandlayoutfornavigationbarandheadersection} width={adjustedWidth} height="98" viewBox={`0 0 ${adjustedWidth} 98`} fill="none">
-          <Rect width={adjustedWidth} height="98" fill="#F2F2F7"/>
-          <Line y1="97.835" x2={adjustedWidth} y2="97.835" stroke="#B1B1B2" strokeWidth="0.33"/>
-        </Svg>
-        
-        {/* Add status bar time display if needed */}
-      </View>
-
-      {/* Title Section with Press Log Button */}
-      <View style={styles.titleScorecardandPressLogButton}>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.chevron}>{'←'}</Text>
-          <Text style={styles.label}>Back</Text>
+          <Text style={styles.chevron}>←</Text>
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
         
-        <Text style={styles._title}>Scorecard</Text>
+        <Text style={styles.title}>Scorecard</Text>
         
-        <TouchableOpacity onPress={handlePressLogPress} style={styles.pressLogButtonContainer}>
-          <View style={styles.buttonBackground} />
-          <Text style={styles.pressLog}>Press Log</Text>
-          <Svg style={styles.savetimeiconsvg} width="19" height="20" viewBox="0 0 19 20" fill="none">
-            <Path d="M1.38379 19.5545C1.88357 19.1314 2.52334 18.9258 3.16754 18.9811L9.09351 19.4431H9.11225C10.237 19.4353 11.3311 19.0636 12.2404 18.3804L19 11.5422C18.7365 11.3501 18.4199 11.2508 18.0974 11.2592C17.7748 11.2676 17.4635 11.3832 17.2097 11.5888L17.2017 11.5952L13.8373 14.1915C13.9213 14.3977 13.9826 14.6129 14.0202 14.8332C14.038 14.9385 14.0146 15.0467 13.9551 15.1341C13.8956 15.2215 13.8049 15.281 13.7029 15.2994L8.2434 16.2849C8.22102 16.2889 8.19835 16.2908 8.17565 16.2907C8.07774 16.291 7.98329 16.2533 7.91104 16.1851C7.83879 16.1169 7.79402 16.0232 7.7856 15.9225C7.77718 15.8218 7.80572 15.7216 7.86558 15.6416C7.92544 15.5617 8.01223 15.5078 8.10874 15.4908L13.1482 14.5811C12.9744 14.1044 12.6449 13.7053 12.2165 13.4525C11.7881 13.1997 11.2877 13.109 10.8014 13.1962L7.48016 13.7958C6.82674 13.9128 6.15619 13.8767 5.51809 13.6902L5.14662 13.5812C4.24605 13.3144 3.29236 13.3038 2.38641 13.5504C1.48046 13.797 0.655922 14.2917 0 14.9821L0.850446 20L1.38379 19.5545ZM8.72728 10.7761C9.75989 10.7761 10.7693 10.4601 11.6279 9.86808C12.4865 9.27603 13.1556 8.43453 13.5508 7.44999C13.946 6.46545 14.0494 5.38209 13.8479 4.33691C13.6465 3.29173 13.1492 2.33166 12.419 1.57813C11.6889 0.824595 10.7586 0.311432 9.74584 0.103533C8.73307 -0.104367 7.68332 0.00233451 6.72931 0.410144C5.77531 0.817954 4.95991 1.50856 4.38622 2.39462C3.81254 3.28068 3.50634 4.32241 3.50634 5.38807C3.5079 6.81658 4.05846 8.18611 5.03724 9.19622C6.01602 10.2063 7.34308 10.7745 8.72728 10.7761ZM8.00023 2.49047C8.00023 2.38364 8.04135 2.28118 8.11455 2.20564C8.18775 2.1301 8.28703 2.08766 8.39055 2.08766C8.49407 2.08766 8.59335 2.1301 8.66655 2.20564C8.73974 2.28118 8.78087 2.38364 8.78087 2.49047V5.51731H10.9109C11.0144 5.51731 11.1137 5.55975 11.1869 5.63529C11.2601 5.71083 11.3012 5.81329 11.3012 5.92012C11.3012 6.02696 11.2601 6.12941 11.1869 6.20495C11.1137 6.2805 11.0144 6.32294 10.9109 6.32294H8.41536C8.19974 6.32294 8.00023 6.09362 8.00023 5.8711V2.49047Z" fill="#FBFAF5"/>
-          </Svg>
+        <TouchableOpacity 
+          onPress={handlePressLogPress} 
+          style={styles.pressLogButton}
+        >
+          <Text style={styles.pressLogButtonText}>Press Log</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Grid for Scorecard - vertical lines */}
-      <View style={styles.gridforScorecardforVisualSeparation}>
-        <Svg style={styles.linebreakersandbackground} width={adjustedWidth} height="718" viewBox={`0 0 ${adjustedWidth} 718`} fill="none">
-          <Path d={`M158.25 91L0 91L${adjustedWidth} 91`} stroke="#0F0F0F" strokeOpacity="0.25" strokeWidth="2"/>
-          <Path d={`M158.25 141L0 141L${adjustedWidth} 141`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 191L0 191L${adjustedWidth} 191`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 241L0 241L${adjustedWidth} 241`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 341L0 341L${adjustedWidth} 341`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 441L0 441L${adjustedWidth} 441`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 291L0 291L${adjustedWidth} 291`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 391L0 391L${adjustedWidth} 391`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 491L0 491L${adjustedWidth} 491`} stroke="#484849" strokeOpacity="0.2"/>
-          <Path d={`M158.25 1.00001L0 1L${adjustedWidth} 1.00004`} stroke="#0F0F0F" strokeOpacity="0.5" strokeWidth="2"/>
-          <Path d={`M158.25 541L0 541L${adjustedWidth} 541`} stroke="#0F0F0F" strokeOpacity="0.25" strokeWidth="2"/>
-          <Path d={`M158.25 591L0 591L${adjustedWidth} 591`} stroke="#0F0F0F" strokeOpacity="0.25" strokeWidth="2"/>
-          <Rect y="541" width="540" height="64" transform="rotate(-90 0 541)" fill="#454545" fillOpacity="0.1"/>
-          <Rect y="541" width={adjustedWidth} height="50" fill="#454545" fillOpacity="0.1"/>
-          <Rect y="591" width={adjustedWidth} height="140" fill="#454545" fillOpacity="0.1"/>
-        </Svg>
-
-        <Svg style={styles.verticallinetoseparateid1team1andid2team2} width="1" height="716" viewBox="0 0 1 716" fill="none">
-          <Line x1="0.5" y1="-2.18557e-08" x2="0.500032" y2="724" stroke="#484849" strokeOpacity="0.2"/>
-        </Svg>
-
-        <Svg style={styles.verticallinetoseparateid2team2andifapplicableid3team3} width="1" height="716" viewBox="0 0 1 716" fill="none">
-          <Line x1="0.5" y1="-2.18557e-08" x2="0.500032" y2="724" stroke="#484849" strokeOpacity="0.2"/>
-        </Svg>
-      </View>
-
-      {/* Teams Layout */}
-      <View style={styles.teamsLayout}>
-        {teams.map((team, index) => (
-          <View key={team.id} style={styles.teamContainer}>
-            <View style={styles.teamCircleContainer}>
-              <Svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                <Circle cx="22" cy="22" r="22" fill={team.color} />
-              </Svg>
+      {/* Team Avatars */}
+      <View style={styles.teamRow}>
+        {teams.map(team => (
+          <View key={team.id} style={styles.teamAvatarContainer}>
+            <View style={[styles.teamAvatar, { backgroundColor: team.color }]}>
               <Text style={styles.teamInitial}>{team.initial}</Text>
             </View>
             <Text style={styles.teamName} numberOfLines={1} ellipsizeMode="tail">
@@ -145,285 +101,245 @@ export default function ScorecardFlow({
         ))}
       </View>
 
-      {/* Hole Numbers */}
-      <View style={styles.holeNumbersContainer}>
-        <Text style={styles.holeLabel}>Hole</Text>
-        {displayedHoles.map((hole) => (
-          <Text key={hole} style={styles.holeNumber}>{hole}</Text>
-        ))}
-        <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.rangeLabel}>
-          {showBack9 ? '10-18' : '1-9'}
-        </Text>
-      </View>
-
-      {/* Score Display */}
-      <View style={styles.scoreDisplayContainer}>
-        {teams.map((team, teamIndex) => (
-          <View key={team.id} style={styles.scoreRow}>
-            {team.scores
-              .slice(showBack9 ? 9 : 0, showBack9 ? 18 : 9)
-              .map((score, index) => (
-                <View key={`score-${index}`} style={styles.scoreCell}>
-                  <Text style={styles.scoreText}>
-                    {score !== null ? score.toString() : '-'}
-                  </Text>
-                </View>
-              ))}
+      {/* Scorecard */}
+      <ScrollView 
+        style={styles.scorecardContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hole Numbers Row */}
+        <View style={styles.scoreRow}>
+          <View style={styles.holeCell}>
+            <Text style={styles.holeLabel}>Hole</Text>
           </View>
-        ))}
-      </View>
-
-      {/* Running Totals */}
-      <View style={styles.runningTotalsContainer}>
-        {totals.map((total, index) => (
-          <View key={`total-${index}`} style={styles.totalRow}>
-            <Text style={styles.sectionTotal}>
-              {showBack9 ? total.back9 : total.front9}
-            </Text>
-            <Text style={styles.grandTotal}>{total.total}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Press Indicators */}
-      <View style={styles.pressNotificationContainer}>
-        {filteredPresses.map((press, index) => {
-          // Calculate position in the grid based on hole
-          const holeOffset = showBack9 ? 9 : 0;
-          const rowIndex = press.holeIndex - holeOffset;
           
-          return (
-            <View
-              key={`${press.id}-${index}`}
-              style={[
-                styles.pressIndicator,
-                {
-                  top: 91 + (rowIndex * 50), // Position based on hole row
-                  left: press.fromTeamId === teams[0].id ? 150 : 250,
-                  backgroundColor: teams.find(t => t.id === press.fromTeamId)?.color || '#000000',
-                }
-              ]}
-            />
-          );
-        })}
-      </View>
-    </View>
+          {displayedHoles.map(hole => (
+            <View key={`hole-${hole}`} style={styles.scoreCell}>
+              <Text style={styles.holeNumber}>{hole}</Text>
+            </View>
+          ))}
+          
+          <View style={styles.totalCell}>
+            <View>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.rangeLabel}>{showBack9 ? '10-18' : '1-9'}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Separator Line */}
+        <View style={styles.separatorLine} />
+
+        {/* Team Scores */}
+        {teams.map((team, teamIndex) => (
+          <View key={team.id}>
+            <View style={styles.scoreRow}>
+              <View style={[styles.teamIndicatorCell, { backgroundColor: team.color }]}>
+                <Text style={styles.teamInitialSmall}>{team.initial}</Text>
+              </View>
+              
+              {team.scores
+                .slice(showBack9 ? 9 : 0, showBack9 ? 18 : 9)
+                .map((score, index) => (
+                  <View 
+                    key={`score-${index}`} 
+                    style={styles.scoreCell}
+                  >
+                    <Text style={styles.scoreText}>
+                      {score !== null ? score : '-'}
+                    </Text>
+                    
+                    {/* Press Indicators */}
+                    {filteredPresses.some(
+                      press => 
+                        press.fromTeamId === team.id && 
+                        press.holeIndex === (index + (showBack9 ? 9 : 0))
+                    ) && (
+                      <View 
+                        style={[
+                          styles.pressIndicator, 
+                          { backgroundColor: team.color }
+                        ]} 
+                      />
+                    )}
+                  </View>
+                ))}
+
+              <View style={styles.totalCell}>
+                <Text style={styles.totalScore}>
+                  {showBack9 ? 
+                    totals.find(t => t.teamId === team.id)?.back9 : 
+                    totals.find(t => t.teamId === team.id)?.front9}
+                </Text>
+                <Text style={styles.totalScore}>
+                  {totals.find(t => t.teamId === team.id)?.total}
+                </Text>
+              </View>
+            </View>
+            
+            {teamIndex < teams.length - 1 && (
+              <View style={styles.teamSeparator} />
+            )}
+          </View>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  scorecardFlowContainer: {
+  container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  navigationBar: {
-    width: '100%',
-    height: 98,
-    position: 'absolute',
-    top: 0,
-    zIndex: 1,
-  },
-  backgroundforsizingandlayoutfornavigationbarandheadersection: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  titleScorecardandPressLogButton: {
+  header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    height: 44,
-    marginTop: 44,
-    zIndex: 2,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-  },
-  chevron: {
-    fontSize: 18,
-    color: '#007AFF',
-    marginRight: 2,
-  },
-  label: {
-    fontSize: 17,
-    color: '#007AFF',
-  },
-  _title: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  pressLogButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    position: 'relative',
-  },
-  buttonBackground: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#000000',
-    borderRadius: 16,
-  },
-  pressLog: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginRight: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  savetimeiconsvg: {
-    marginLeft: 2,
-  },
-  gridforScorecardforVisualSeparation: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-  },
-  linebreakersandbackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  verticallinetoseparateid1team1andid2team2: {
-    position: 'absolute',
-    left: 135,
-    top: 0,
-  },
-  verticallinetoseparateid2team2andifapplicableid3team3: {
-    position: 'absolute',
-    left: 270,
-    top: 0,
-  },
-  teamsLayout: {
-    flexDirection: 'row',
-    marginTop: 120,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    justifyContent: 'space-between',
-    zIndex: 2,
-  },
-  teamContainer: {
-    alignItems: 'center',
-    width: 100,
-  },
-  teamCircleContainer: {
-    position: 'relative',
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  teamInitial: {
-    position: 'absolute',
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  teamName: {
-    fontSize: 14,
-    color: '#000000',
-    marginTop: 8,
-    textAlign: 'center',
-    maxWidth: 80,
-  },
-  holeNumbersContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(240, 240, 240, 0.5)',
-    zIndex: 2,
-  },
-  holeLabel: {
-    width: 40,
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  holeNumber: {
-    width: 28,
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#000000',
-  },
-  totalLabel: {
-    width: 50,
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
-  },
-  rangeLabel: {
-    width: 50,
-    fontSize: 12,
-    color: '#777777',
-    textAlign: 'center',
-  },
-  scoreDisplayContainer: {
-    flexDirection: 'column',
-    zIndex: 2,
-  },
-  scoreRow: {
-    flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
-  scoreCell: {
-    width: 28,
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chevron: {
+    fontSize: 18,
+    color: '#007AFF',
+    marginRight: 4,
+  },
+  backButtonText: {
+    fontSize: 17,
+    color: '#007AFF',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  pressLogButton: {
+    backgroundColor: '#000000',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressLogButtonText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  teamRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  teamAvatarContainer: {
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  teamAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scoreText: {
-    fontSize: 16,
-    color: '#000000',
+  teamInitial: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
-  runningTotalsContainer: {
-    flexDirection: 'column',
-    zIndex: 2,
-    backgroundColor: 'rgba(240, 240, 240, 0.5)',
-    paddingHorizontal: 16,
+  teamInitialSmall: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  teamName: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    maxWidth: 100,
+  },
+  scorecardContainer: {
+    flex: 1,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 8,
   },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingVertical: 4,
+  holeCell: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sectionTotal: {
-    width: 50,
-    fontSize: 16,
+  scoreCell: {
+    flex: 1,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  teamIndicatorCell: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  totalCell: {
+    width: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  holeLabel: {
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#000000',
+  },
+  holeNumber: {
+    fontSize: 14,
+  },
+  totalLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  rangeLabel: {
+    fontSize: 12,
+    color: '#777777',
     textAlign: 'center',
   },
-  grandTotal: {
-    width: 50,
+  scoreText: {
+    fontSize: 16,
+  },
+  totalScore: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
+    padding: 2,
   },
-  pressNotificationContainer: {
-    position: 'absolute',
-    top: 200,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
+  separatorLine: {
+    height: 2,
+    backgroundColor: '#333333',
+    opacity: 0.2,
+    marginVertical: 4,
+  },
+  teamSeparator: {
+    height: 1,
+    backgroundColor: '#EEEEEE',
+    marginVertical: 4,
   },
   pressIndicator: {
     position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  }
+    bottom: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
 });
