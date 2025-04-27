@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 
 interface Team {
   id: string;
@@ -19,7 +19,13 @@ interface Press {
   fromTeamId: string;
   toTeamId: string;
   holeIndex: number;
-  pressType: string; // Changed from gameType to pressType
+  pressType: string;
+}
+
+interface GameFormat {
+  type: string;
+  betAmount: number;
+  label?: string; // Added for display purposes
 }
 
 interface GameType {
@@ -34,8 +40,9 @@ interface StepPressModalProps {
   hole: Hole;
   teams: Team[];
   onClose: () => void;
-  onSave: (press: Omit<Press, 'id'>) => void; // This prop expects a Press object without an id
-  teamColors?: {[key: string]: string}; // Fixed team colors mapping
+  onSave: (press: Omit<Press, 'id'>) => void;
+  teamColors?: {[key: string]: string};
+  gameFormats?: GameFormat[]; // Add this prop to receive game formats from match creation
 }
 
 const StepPressModal: React.FC<StepPressModalProps> = ({
@@ -47,17 +54,54 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   teamColors = {
     '1': '#4CAE4F', // Default green for Team 1
     '2': '#FFC105', // Default yellow for Team 2
-  }
+  },
+  gameFormats = [] // Default to empty array if not provided
 }) => {
   const [fromTeamId, setFromTeamId] = useState<string | null>(null);
   const [toTeamId, setToTeamId] = useState<string | null>(null);
-  
-  // Game types that can be selected
-  const [gameTypes, setGameTypes] = useState<GameType[]>([
+  const [addedPresses, setAddedPresses] = useState<Array<{
+    fromTeamId: string;
+    toTeamId: string;
+    pressType: string;
+  }>>([]);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const defaultGameTypes = [
     { id: 'front9', name: 'Front 9', amount: '$10', selected: false },
     { id: 'back9', name: 'Back 9', amount: '$10', selected: false },
     { id: 'total18', name: 'Total 18', amount: '$10', selected: false },
-  ]);
+  ];
+
+  const mapGameFormatsToTypes = () => {
+    if (gameFormats.length === 0) return defaultGameTypes;
+
+    return gameFormats.map(format => {
+      let name = 'Unknown';
+      let id = format.type;
+
+      if (format.type === 'front') {
+        name = 'Front 9';
+        id = 'front9';
+      } else if (format.type === 'back') {
+        name = 'Back 9';
+        id = 'back9'; 
+      } else if (format.type === 'total') {
+        name = 'Total 18';
+        id = 'total18';
+      } else if (format.label) {
+        name = format.label;
+      }
+
+      return {
+        id,
+        name,
+        amount: `$${format.betAmount}`,
+        selected: false
+      };
+    });
+  };
+
+  const [gameTypes, setGameTypes] = useState<GameType[]>(mapGameFormatsToTypes());
 
   const handleSave = () => {
     if (!fromTeamId || !toTeamId) {
@@ -71,23 +115,57 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       return;
     }
 
-    // Create a press for each selected game type
-    selectedGameTypes.forEach(gameType => {
-      onSave({
-        fromTeamId,
-        toTeamId,
-        holeIndex: hole.number - 1,
-        pressType: gameType.id, // Changed from gameType to pressType
-      });
-    });
-    
-    handleClose();
-  };
+    const newPresses = selectedGameTypes.map(gameType => ({
+      fromTeamId,
+      toTeamId,
+      pressType: gameType.id,
+      holeIndex: hole.number - 1
+    }));
 
-  const reset = () => {
+    setAddedPresses([...addedPresses, ...newPresses]);
+
     setFromTeamId(null);
     setToTeamId(null);
     setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
+
+    setShowConfirmation(true);
+  };
+
+  const handleSubmitAllPresses = () => {
+    addedPresses.forEach(press => {
+      onSave({
+        fromTeamId: press.fromTeamId,
+        toTeamId: press.toTeamId,
+        holeIndex: hole.number - 1,
+        pressType: press.pressType,
+      });
+    });
+
+    resetAndClose();
+  };
+
+  const resetAndClose = () => {
+    setFromTeamId(null);
+    setToTeamId(null);
+    setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
+    setAddedPresses([]);
+    setShowConfirmation(false);
+    onClose();
+  };
+
+  const handleBack = () => {
+    if (showConfirmation) {
+      setShowConfirmation(false);
+      return;
+    }
+
+    if (fromTeamId && toTeamId) {
+      setFromTeamId(null);
+      setToTeamId(null);
+      return;
+    }
+
+    resetAndClose();
   };
 
   const toggleGameType = (id: string) => {
@@ -96,33 +174,114 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
     ));
   };
 
-  const handleClose = () => {
-    reset();
-    onClose();
-  };
-
-  // Determine the current step of the press creation flow
   const getCurrentStep = () => {
+    if (showConfirmation) return 4;
     if (!fromTeamId) return 1;
     if (!toTeamId) return 2;
     return 3;
   };
 
   const currentStep = getCurrentStep();
-  
-  // Team selection step - ensuring both teams are always shown as options to press
+
+  const getTeamName = (id: string): string => {
+    return teams.find(team => team.id === id)?.name || 'Unknown Team';
+  };
+
+  const getGameTypeName = (id: string): string => {
+    return gameTypes.find(gt => gt.id === id)?.name || id;
+  };
+
+  const renderConfirmationStep = () => {
+    const pressesByTeam: { [key: string]: Array<{ toTeamId: string, pressTypes: string[] }> } = {};
+
+    addedPresses.forEach(press => {
+      if (!pressesByTeam[press.fromTeamId]) {
+        pressesByTeam[press.fromTeamId] = [];
+      }
+
+      const existingToTeam = pressesByTeam[press.fromTeamId].find(p => p.toTeamId === press.toTeamId);
+
+      if (existingToTeam) {
+        existingToTeam.pressTypes.push(press.pressType);
+      } else {
+        pressesByTeam[press.fromTeamId].push({
+          toTeamId: press.toTeamId,
+          pressTypes: [press.pressType]
+        });
+      }
+    });
+
+    return (
+      <ScrollView>
+        <Text style={styles.pressDetailsTitle}>Presses Added</Text>
+
+        {Object.keys(pressesByTeam).map(fromId => {
+          const fromTeam = teams.find(t => t.id === fromId);
+          const fromTeamIndex = teams.findIndex(t => t.id === fromId);
+          const fromTeamColor = teamColors[(fromTeamIndex + 1).toString()] || fromTeam?.color || '#4CAE4F';
+
+          return pressesByTeam[fromId].map((toTeamData, idx) => {
+            const toTeam = teams.find(t => t.id === toTeamData.toTeamId);
+            const toTeamIndex = teams.findIndex(t => t.id === toTeamData.toTeamId);
+            const toTeamColor = teamColors[(toTeamIndex + 1).toString()] || toTeam?.color || '#FFC105';
+
+            return (
+              <View key={`${fromId}-${toTeamData.toTeamId}-${idx}`} style={styles.confirmationItem}>
+                <View style={styles.teamRow}>
+                  <View style={[styles.teamCircle, { backgroundColor: fromTeamColor }]}>
+                    <Text style={styles.teamInitial}>
+                      {fromTeam?.name?.charAt(0) || 'T'}
+                    </Text>
+                  </View>
+                  <Text style={styles.toText}>pressing</Text>
+                  <View style={[styles.teamCircle, { backgroundColor: toTeamColor }]}>
+                    <Text style={styles.teamInitial}>
+                      {toTeam?.name?.charAt(0) || 'T'}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.pressTypesTitle}>Game Types:</Text>
+                <View style={styles.pressTypeList}>
+                  {toTeamData.pressTypes.map((type, typeIdx) => (
+                    <Text key={`type-${typeIdx}`} style={styles.pressTypeItem}>
+                      • {getGameTypeName(type)}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            );
+          });
+        })}
+
+        <TouchableOpacity
+          style={styles.addAnotherButton}
+          onPress={() => setShowConfirmation(false)}
+        >
+          <Text style={styles.addAnotherButtonText}>Add Another Press</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.submitButton}
+          onPress={handleSubmitAllPresses}
+        >
+          <Text style={styles.submitButtonText}>Submit All Presses</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  };
+
   const renderTeamSelectionStep = () => (
-    <View>
+    <ScrollView>
       <Text style={styles.pressDetailsTitle}>Who's Pressing?</Text>
-      
+
       <View style={styles.teamsContainer}>
         {teams.map((pressingTeam, pressingIdx) => {
-          // For each team, create a press option against each other team
           return teams
-            .filter(t => t.id !== pressingTeam.id) // Exclude self
+            .filter(t => t.id !== pressingTeam.id)
             .map((targetTeam, targetIdx) => {
               const pressingTeamColor = teamColors[(pressingIdx + 1).toString()] || pressingTeam.color || '#888888';
-              
+
               return (
                 <TouchableOpacity
                   key={`${pressingTeam.id}-${targetTeam.id}`}
@@ -143,23 +302,22 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
             });
         })}
       </View>
-    </View>
+    </ScrollView>
   );
 
-  // Game type selection step
   const renderGameTypeSelectionStep = () => {
     const fromTeam = teams.find(t => t.id === fromTeamId);
     const toTeam = teams.find(t => t.id === toTeamId);
     const fromTeamIndex = teams.findIndex(t => t.id === fromTeamId);
     const toTeamIndex = teams.findIndex(t => t.id === toTeamId);
-    
+
     const fromTeamColor = teamColors[(fromTeamIndex + 1).toString()] || fromTeam?.color || '#4CAE4F';
     const toTeamColor = teamColors[(toTeamIndex + 1).toString()] || toTeam?.color || '#FFC105';
-    
+
     return (
-      <View>
+      <ScrollView>
         <Text style={styles.pressDetailsTitle}>Press Details</Text>
-        
+
         <View style={styles.teamRow}>
           <View style={[styles.teamCircle, { backgroundColor: fromTeamColor }]}>
             <Text style={styles.teamInitial}>
@@ -175,7 +333,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         </View>
 
         <Text style={styles.selectGameTypesTitle}>Select Game Types</Text>
-        
+
         <View style={styles.gameTypesContainer}>
           {gameTypes.map((gameType) => (
             <TouchableOpacity
@@ -187,8 +345,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
                 <Text style={styles.gameTypeName}>{gameType.name}</Text>
                 <Text style={styles.gameTypeAmount}>{gameType.amount}</Text>
               </View>
-              
-              {/* Custom toggle button that visually shows selected state */}
+
               <View style={[
                 styles.toggleButton,
                 gameType.selected && styles.toggleButtonSelected
@@ -196,7 +353,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
             </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
@@ -209,23 +366,29 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity style={styles.backButton} onPress={handleClose}>
-              <Text style={styles.backButtonText}>Back</Text>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Text style={styles.backButtonText}>
+                {showConfirmation ? 'Add More' : 'Back'}
+              </Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Add Press</Text>
-            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+            <Text style={styles.modalTitle}>
+              {showConfirmation ? 'Review Presses' : 'Add Press'}
+            </Text>
+            <TouchableOpacity style={styles.closeButton} onPress={resetAndClose}>
               <Text style={styles.closeButtonText}>×</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.stepsContainer}>
-            {currentStep <= 2 
-              ? renderTeamSelectionStep()
-              : renderGameTypeSelectionStep()
+            {currentStep === 4
+              ? renderConfirmationStep()
+              : currentStep <= 2
+                ? renderTeamSelectionStep()
+                : renderGameTypeSelectionStep()
             }
           </View>
-          
-          {currentStep > 2 && (
+
+          {currentStep === 3 && (
             <TouchableOpacity
               style={styles.addPressButton}
               onPress={handleSave}
@@ -384,6 +547,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  confirmationItem: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  pressTypesTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  pressTypeList: {
+    paddingLeft: 8,
+  },
+  pressTypeItem: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  addAnotherButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  addAnotherButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  submitButton: {
+    backgroundColor: '#4CAE4F',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
+  }
 });
 
 export default StepPressModal;

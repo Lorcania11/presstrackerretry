@@ -35,6 +35,7 @@ export default function MatchDetailScreen() {
   const [showPressModal, setShowPressModal] = useState(false);
   const [scores, setScores] = useState<{[teamId: string]: string}>({});
   const [showBack9, setShowBack9] = useState(false);
+  const [currentHoleSaved, setCurrentHoleSaved] = useState<boolean>(false);
 
   // Map to keep track of team IDs to fixed colors
   const [teamFixedColors, setTeamFixedColors] = useState<{[teamId: string]: string}>({});
@@ -102,6 +103,7 @@ export default function MatchDetailScreen() {
       const newIndex = currentHoleIndex - 1;
       setCurrentHoleIndex(newIndex);
       initializeScores(match!, newIndex);
+      setCurrentHoleSaved(false);
       
       if (newIndex === 8) {
         setShowBack9(false);
@@ -112,12 +114,15 @@ export default function MatchDetailScreen() {
   const handleNextHole = () => {
     if (!match || currentHoleIndex >= 17) return;
     
-    // Save current hole scores first
-    saveCurrentHoleScores(false);
+    // Save current hole scores first if not already saved
+    if (!currentHoleSaved) {
+      saveCurrentHoleScores(false);
+    }
     
     const newIndex = currentHoleIndex + 1;
     setCurrentHoleIndex(newIndex);
     initializeScores(match, newIndex);
+    setCurrentHoleSaved(false); // Reset for the new hole
     
     if (newIndex === 9) {
       setShowBack9(true);
@@ -133,6 +138,8 @@ export default function MatchDetailScreen() {
       return obj;
     }, {} as {[teamId: string]: number | null});
     
+    const isHoleComplete = Object.values(numericScores).every(score => score !== null);
+    
     const updatedHoles = match.holes.map((hole, index) => {
       if (index === currentHoleIndex) {
         return {
@@ -141,7 +148,7 @@ export default function MatchDetailScreen() {
             ...scoreEntry,
             score: numericScores[scoreEntry.teamId]
           })),
-          isComplete: Object.values(numericScores).every(score => score !== null)
+          isComplete: isHoleComplete
         };
       }
       return hole;
@@ -151,9 +158,13 @@ export default function MatchDetailScreen() {
     setMatch(updatedMatch);
     updateMatch(updatedMatch);
     
+    // Mark the current hole as saved if all scores are entered
+    if (isHoleComplete) {
+      setCurrentHoleSaved(true);
+    }
+    
     // Show press modal if this is a completed hole
-    if (showPressModalAfter && match.enablePresses && 
-        Object.values(numericScores).every(score => score !== null)) {
+    if (showPressModalAfter && match.enablePresses && isHoleComplete) {
       setShowPressModal(true);
     }
   };
@@ -165,17 +176,8 @@ export default function MatchDetailScreen() {
   const handlePressModalClose = () => {
     setShowPressModal(false);
     
-    // Move to next hole automatically after press modal closes
-    if (currentHoleIndex < 17) {
-      const newIndex = currentHoleIndex + 1;
-      setCurrentHoleIndex(newIndex);
-      if (match) {
-        initializeScores(match, newIndex);
-      }
-      if (newIndex === 9) {
-        setShowBack9(true);
-      }
-    }
+    // This function should just close the modal without automatic navigation
+    // We'll let the users manually navigate to next hole after adding all desired presses
   };
 
   const handleSavePresses = (updatedHole: Hole) => {
@@ -194,9 +196,7 @@ export default function MatchDetailScreen() {
       const newIndex = currentHoleIndex + 1;
       setCurrentHoleIndex(newIndex);
       initializeScores(updatedMatch, newIndex);
-      if (newIndex === 9) {
-        setShowBack9(true);
-      }
+      setShowBack9(true);
     }
   };
 
@@ -217,7 +217,9 @@ export default function MatchDetailScreen() {
     
     setMatch(updatedMatch);
     updateMatch(updatedMatch);
-    handlePressModalClose();
+    
+    // Don't close modal here - let the modal handle its own closure
+    // handlePressModalClose will be called when the modal itself decides to close
   };
 
   const handleOpenScorecard = () => {
@@ -354,6 +356,18 @@ export default function MatchDetailScreen() {
         </View>
       </View>
 
+      {currentHoleSaved && currentHoleIndex < 17 && (
+        <View style={styles.nextHoleContainer}>
+          <TouchableOpacity 
+            style={styles.nextHoleButton}
+            onPress={handleNextHole}
+          >
+            <Text style={styles.nextHoleButtonText}>Next Hole</Text>
+            <ArrowRight size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {showPressModal && (
         <StepPressModal
           isVisible={showPressModal}
@@ -365,6 +379,12 @@ export default function MatchDetailScreen() {
           onClose={handlePressModalClose}
           onSave={handleSavePress}
           teamColors={FIXED_TEAM_COLORS}
+          gameFormats={match.gameFormats.map(format => ({
+            ...format,
+            label: format.type === 'front' ? 'Front 9' : 
+                   format.type === 'back' ? 'Back 9' : 
+                   format.type === 'total' ? 'Total 18' : format.type
+          }))}
         />
       )}
     </SafeAreaView>
@@ -527,5 +547,23 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#999999',
+  },
+  nextHoleContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  nextHoleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  nextHoleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginRight: 8,
   },
 });

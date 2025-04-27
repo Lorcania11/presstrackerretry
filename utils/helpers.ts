@@ -73,6 +73,22 @@ export const generateUniqueId = (): string => {
     Math.random().toString(36).substring(2, 15);
 };
 
+export const formatGameType = (type: string): string => {
+  switch (type) {
+    case 'front':
+    case 'front9':
+      return 'Front 9';
+    case 'back':
+    case 'back9':
+      return 'Back 9';
+    case 'total':
+    case 'total18':
+      return 'Total 18';
+    default:
+      return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+};
+
 export const calculateMatchPlay = (teams: MatchTeam[], holes: Hole[]): MatchPlayResult => {
   // This is a simplified match play calculation
   // Assuming only 2 teams for match play
