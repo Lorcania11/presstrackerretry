@@ -6,17 +6,16 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   useColorScheme,
-  ScrollView,
-  Switch
+  ScrollView
 } from 'react-native';
-import { X, ChevronRight, TrendingDown } from 'lucide-react-native';
+import { X, ChevronRight, TrendingDown, Check } from 'lucide-react-native';
 
 interface Team {
   id: string;
   name: string;
   color: string;
   initial: string;
-  scores?: number[];
+  scores?: (number | null)[];  // Updated to match ExtendedMatchTeam
 }
 
 interface GameFormat {
@@ -176,7 +175,8 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       .map(([type]) => type);
     
     if (selectedFormatTypes.length === 0) {
-      selectedFormatTypes.push(...formattedGameFormats.map(format => format.type));
+      // No need to select all by default - user should make an explicit choice
+      return;
     }
     
     const presses = selectedFormatTypes.map(type => {
@@ -274,6 +274,9 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
     const fromTeam = teams.find(team => team.id === selectedFrom);
     const toTeam = teams.find(team => team.id === selectedTo);
     
+    // Count selected types to enable/disable the Add Press button
+    const selectedCount = Object.values(selectedTypes).filter(Boolean).length;
+    
     return (
       <View style={styles.stepContainer}>
         <View style={styles.summaryHeader}>
@@ -300,35 +303,52 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
             <TouchableOpacity
               key={format.type}
               style={[
-                styles.typeOption,
-                { backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5' }
+                styles.gameTypeButton,
+                selectedTypes[format.type] && styles.gameTypeButtonSelected,
+                { borderColor: isDark ? '#444444' : '#DDDDDD' }
               ]}
               onPress={() => handleToggleType(format.type)}
             >
-              <View style={styles.typeInfo}>
-                <Text style={[styles.typeName, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+              <View style={styles.gameTypeContent}>
+                <Text 
+                  style={[
+                    styles.gameTypeName, 
+                    { color: isDark ? '#FFFFFF' : '#333333' }
+                  ]}
+                >
                   {format.label}
                 </Text>
-                <Text style={[styles.typeAmount, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+                <Text 
+                  style={[
+                    styles.gameTypeAmount, 
+                    { color: isDark ? '#AAAAAA' : '#666666' }
+                  ]}
+                >
                   ${format.betAmount}
                 </Text>
               </View>
-              <Switch
-                value={selectedTypes[format.type] || false}
-                onValueChange={() => handleToggleType(format.type)}
-                trackColor={{ false: '#767577', true: '#4CAF50' }}
-                thumbColor="#FFFFFF"
-              />
+              
+              {selectedTypes[format.type] && (
+                <View style={styles.checkIconContainer}>
+                  <Check size={20} color="#FFFFFF" />
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
         
         <View style={styles.confirmButtonContainer}>
           <TouchableOpacity
-            style={styles.confirmButton}
+            style={[
+              styles.confirmButton,
+              selectedCount === 0 && styles.confirmButtonDisabled
+            ]}
             onPress={handleSubmit}
+            disabled={selectedCount === 0}
           >
-            <Text style={styles.confirmButtonText}>Add Press</Text>
+            <Text style={styles.confirmButtonText}>
+              Add {selectedCount > 0 ? selectedCount : ''} Press{selectedCount !== 1 ? 'es' : ''}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -482,24 +502,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
-  typeOption: {
+  gameTypeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: 16,
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 12,
+    borderWidth: 1,
   },
-  typeInfo: {
+  gameTypeButtonSelected: {
+    borderColor: '#4CAF50',
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  gameTypeContent: {
     flex: 1,
   },
-  typeName: {
+  gameTypeName: {
     fontSize: 16,
     fontWeight: '600',
   },
-  typeAmount: {
+  gameTypeAmount: {
     fontSize: 14,
-    marginTop: 2,
+    marginTop: 4,
+  },
+  checkIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   confirmButtonContainer: {
     marginTop: 16,
@@ -509,6 +543,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  confirmButtonDisabled: {
+    backgroundColor: '#CCCCCC',
   },
   confirmButtonText: {
     color: '#FFFFFF',
