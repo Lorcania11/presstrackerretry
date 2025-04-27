@@ -7,7 +7,6 @@ import {
   TouchableOpacity, 
   ScrollView,
   Switch,
-  useColorScheme,
   Alert,
   Pressable,
 } from 'react-native';
@@ -33,8 +32,6 @@ interface TeamInput {
 }
 
 export default function NewMatchScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const { saveMatch } = useMatches();
   const { setTeams } = useMatchContext();
   
@@ -49,7 +46,7 @@ export default function NewMatchScreen() {
     { id: 'back', type: 'back', label: 'Back 9', betAmount: '10', enabled: false },
     { id: 'total', type: 'total', label: 'Full 18', betAmount: '10', enabled: true },
   ]);
-  const [playFormat, setPlayFormat] = useState<"stroke" | "match">('stroke'); // Changed to union type
+  const [playFormat, setPlayFormat] = useState<"stroke" | "match">('stroke');
   const [enablePresses, setEnablePresses] = useState(true);
   const [setupExpanded, setSetupExpanded] = useState(true);
   const [formatExpanded, setFormatExpanded] = useState(true);
@@ -93,36 +90,6 @@ export default function NewMatchScreen() {
     ));
   };
 
-  const getTextInputStyle = () => {
-    return {
-      ...styles.input,
-      backgroundColor: isDark ? '#2A2A2A' : '#F5F5F5',
-      color: isDark ? '#FFFFFF' : '#333333',
-      borderColor: isDark ? '#444444' : '#DDDDDD',
-    };
-  };
-
-  const getSectionStyle = () => {
-    return {
-      ...styles.section,
-      backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-    };
-  };
-
-  const getLabelStyle = () => {
-    return {
-      ...styles.label,
-      color: isDark ? '#FFFFFF' : '#333333',
-    };
-  };
-
-  const getContainerStyle = () => {
-    return {
-      ...styles.container,
-      backgroundColor: isDark ? '#121212' : '#F5F5F5',
-    };
-  };
-
   const handleCreateMatch = async () => {
     if (!validateForm()) {
       return;
@@ -136,7 +103,7 @@ export default function NewMatchScreen() {
     }
 
     // Add team colors and initials based on team name
-    const teamColors = ['#4CAE4F', '#FFC105', '#F44034'];
+    const teamColors = ['#007AFF', '#34AADC', '#5856D6'];
     
     // Ensure all teams have scores, colors, and initials initialized
     const initializedTeams = teams.map((team, index) => ({
@@ -193,33 +160,33 @@ export default function NewMatchScreen() {
   };
 
   return (
-    <View style={getContainerStyle()}>
+    <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
-        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+        <Text style={styles.title}>
           New Match
         </Text>
 
         <TextInput
-          style={getTextInputStyle()}
+          style={styles.input}
           placeholder="Match Title (Optional)"
-          placeholderTextColor={isDark ? '#888888' : '#999999'}
+          placeholderTextColor="#999999"
           value={title}
           onChangeText={setTitle}
         />
 
-        <View style={getSectionStyle()}>
+        <View style={styles.section}>
           <Pressable 
             style={styles.sectionHeader}
             onPress={() => setSetupExpanded(!setupExpanded)}
           >
             <View style={styles.sectionTitleContainer}>
-              <Users size={20} color={isDark ? '#4CAF50' : '#4CAF50'} />
-              <Text style={getLabelStyle()}>Team Setup</Text>
+              <Users size={20} color="#007AFF" />
+              <Text style={styles.label}>Team Setup</Text>
             </View>
             {setupExpanded ? (
-              <ChevronUp size={20} color={isDark ? '#FFFFFF' : '#333333'} />
+              <ChevronUp size={20} color="#333333" />
             ) : (
-              <ChevronDown size={20} color={isDark ? '#FFFFFF' : '#333333'} />
+              <ChevronDown size={20} color="#333333" />
             )}
           </Pressable>
           
@@ -228,7 +195,7 @@ export default function NewMatchScreen() {
               {teams.map((team, index) => (
                 <View key={team.id} style={styles.teamInputContainer}>
                   <View style={styles.teamLabelContainer}>
-                    <Text style={[styles.teamLabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+                    <Text style={styles.teamLabel}>
                       {team.placeholder}
                     </Text>
                     {teams.length > 2 && (
@@ -241,9 +208,9 @@ export default function NewMatchScreen() {
                     )}
                   </View>
                   <TextInput
-                    style={[getTextInputStyle(), styles.teamInput]}
+                    style={[styles.input, styles.teamInput]}
                     placeholder={`Enter ${team.placeholder} name`}
-                    placeholderTextColor={isDark ? '#888888' : '#999999'}
+                    placeholderTextColor="#999999"
                     value={team.name}
                     onChangeText={(name) => updateTeamName(team.id, name)}
                   />
@@ -278,32 +245,31 @@ export default function NewMatchScreen() {
         </View>
 
         <TouchableOpacity 
-          style={getSectionStyle()} 
+          style={styles.section} 
           onPress={() => setFormatExpanded(!formatExpanded)}
         >
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
-              <Flag size={20} color={isDark ? '#4CAF50' : '#4CAF50'} />
-              <Text style={getLabelStyle()}>Game Format</Text>
+              <Flag size={20} color="#007AFF" />
+              <Text style={styles.label}>Game Format</Text>
             </View>
             {formatExpanded ? (
-              <ChevronUp size={20} color={isDark ? '#FFFFFF' : '#333333'} />
+              <ChevronUp size={20} color="#333333" />
             ) : (
-              <ChevronDown size={20} color={isDark ? '#FFFFFF' : '#333333'} />
+              <ChevronDown size={20} color="#333333" />
             )}
           </View>
           
           {formatExpanded && (
             <View style={styles.sectionContent}>
-              <Text style={[styles.sublabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+              <Text style={styles.sublabel}>
                 Play Format
               </Text>
               <View style={styles.optionsRow}>
                 <TouchableOpacity
                   style={[
                     styles.optionButton,
-                    playFormat === 'stroke' && styles.selectedOption,
-                    playFormat === 'stroke' && { backgroundColor: '#4CAF50' }
+                    playFormat === 'stroke' && styles.selectedOption
                   ]}
                   onPress={() => setPlayFormat('stroke')}
                 >
@@ -320,8 +286,7 @@ export default function NewMatchScreen() {
                 <TouchableOpacity
                   style={[
                     styles.optionButton,
-                    playFormat === 'match' && styles.selectedOption,
-                    playFormat === 'match' && { backgroundColor: '#4CAF50' }
+                    playFormat === 'match' && styles.selectedOption
                   ]}
                   onPress={() => setPlayFormat('match')}
                 >
@@ -336,7 +301,7 @@ export default function NewMatchScreen() {
                 </TouchableOpacity>
               </View>
               
-              <Text style={[styles.sublabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+              <Text style={styles.sublabel}>
                 Games to Play
               </Text>
               <View style={styles.gameFormatsContainer}>
@@ -345,8 +310,7 @@ export default function NewMatchScreen() {
                     key={format.id}
                     style={[
                       styles.gameFormatOption,
-                      format.enabled && styles.gameFormatSelected,
-                      format.enabled && { backgroundColor: '#4CAF50' }
+                      format.enabled && styles.gameFormatSelected
                     ]}
                     onPress={() => toggleGameFormat(format.id)}
                   >
@@ -365,55 +329,55 @@ export default function NewMatchScreen() {
           )}
         </TouchableOpacity>
 
-        <View style={getSectionStyle()}>
+        <View style={styles.section}>
           <Pressable 
             style={styles.sectionHeader}
             onPress={() => setBettingExpanded(!bettingExpanded)}
           >
             <View style={styles.sectionTitleContainer}>
-              <DollarSign size={20} color={isDark ? '#4CAF50' : '#4CAF50'} />
-              <Text style={getLabelStyle()}>Betting Options</Text>
+              <DollarSign size={20} color="#007AFF" />
+              <Text style={styles.label}>Betting Options</Text>
             </View>
             {bettingExpanded ? (
-              <ChevronUp size={20} color={isDark ? '#FFFFFF' : '#333333'} />
+              <ChevronUp size={20} color="#333333" />
             ) : (
-              <ChevronDown size={20} color={isDark ? '#FFFFFF' : '#333333'} />
+              <ChevronDown size={20} color="#333333" />
             )}
           </Pressable>
           
           {bettingExpanded && (
             <View style={styles.sectionContent}>
               <View style={styles.switchRow}>
-                <Text style={[styles.switchLabel, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                <Text style={styles.switchLabel}>
                   Enable Presses
                 </Text>
                 <Switch
                   value={enablePresses}
                   onValueChange={setEnablePresses}
                   trackColor={{ false: '#767577', true: '#81b0ff' }}
-                  thumbColor={enablePresses ? '#4CAF50' : '#f4f3f4'}
+                  thumbColor={enablePresses ? '#007AFF' : '#f4f3f4'}
                 />
               </View>
               
               {enablePresses && (
                 <>
-                  <Text style={[styles.sublabel, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+                  <Text style={styles.sublabel}>
                     Bet Amounts
                   </Text>
                   {gameFormats.map(format => format.enabled && (
                     <View key={format.id} style={styles.betInputContainer}>
-                      <Text style={[styles.betLabel, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                      <Text style={styles.betLabel}>
                         {format.label}
                       </Text>
                       <View style={styles.betAmountContainer}>
                         <Text style={styles.currencySymbol}>$</Text>
                         <TextInput
-                          style={[getTextInputStyle(), styles.betInput]}
+                          style={[styles.input, styles.betInput]}
                           keyboardType="numeric"
                           value={format.betAmount}
                           onChangeText={(amount) => updateBetAmount(format.id, amount)}
                           placeholder="0.00"
-                          placeholderTextColor={isDark ? '#888888' : '#999999'}
+                          placeholderTextColor="#999999"
                         />
                       </View>
                     </View>
@@ -439,6 +403,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#F5F5F5',
   },
   scrollView: {
     flex: 1,
@@ -448,6 +413,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 24,
     marginTop: 8,
+    color: '#333333',
   },
   input: {
     height: 48,
@@ -456,11 +422,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 12,
     fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    color: '#333333',
+    borderColor: '#DDDDDD',
   },
   section: {
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -480,11 +450,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+    color: '#333333',
   },
   sublabel: {
     fontSize: 14,
     marginBottom: 8,
     marginTop: 12,
+    color: '#666666',
   },
   teamInputContainer: {
     marginBottom: 16,
@@ -498,6 +470,7 @@ const styles = StyleSheet.create({
   teamLabel: {
     fontSize: 14,
     fontWeight: '500',
+    color: '#666666',
   },
   teamInput: {
     marginBottom: 0,
@@ -514,14 +487,14 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: '#007AFF',
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
   addTeamButtonText: {
-    color: '#4CAF50',
+    color: '#007AFF',
     fontWeight: '600',
   },
   addTeamActions: {
@@ -538,7 +511,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   confirmButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#007AFF',
   },
   cancelButton: {
     backgroundColor: 'transparent',
@@ -563,14 +536,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#F0F0F0',
   },
   optionText: {
     color: '#333333',
     fontWeight: '500',
   },
   selectedOption: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#007AFF',
   },
   selectedOptionText: {
     color: '#FFFFFF',
@@ -586,14 +559,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
-    backgroundColor: '#EEEEEE',
+    backgroundColor: '#F0F0F0',
   },
   gameFormatText: {
     color: '#333333',
     fontWeight: '500',
   },
   gameFormatSelected: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#007AFF',
   },
   gameFormatTextSelected: {
     color: '#FFFFFF',
@@ -606,6 +579,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 16,
+    color: '#333333',
   },
   betInputContainer: {
     marginBottom: 16,
@@ -614,6 +588,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
+    color: '#333333',
   },
   betAmountContainer: {
     flexDirection: 'row',
@@ -628,7 +603,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   createButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',

@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   pressLogButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,

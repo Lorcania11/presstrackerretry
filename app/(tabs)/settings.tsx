@@ -1,59 +1,15 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Switch, TouchableOpacity, Alert, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Switch, TouchableOpacity, Alert } from 'react-native';
 import { useMatches } from '@/hooks/useMatches';
 import { Info, Moon, Share, Trash2, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 
 export default function SettingsScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const { clearAllMatches, loadMatches } = useMatches();
   
   const [autoSave, setAutoSave] = useState(true);
   const [allowPresses, setAllowPresses] = useState(true);
   const [defaultBet, setDefaultBet] = useState('10');
   const [hapticFeedback, setHapticFeedback] = useState(true);
-  
-  const getContainerStyle = () => {
-    return {
-      ...styles.container,
-      backgroundColor: isDark ? '#121212' : '#F5F5F5',
-    };
-  };
-  
-  const getSectionStyle = () => {
-    return {
-      ...styles.section,
-      backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-    };
-  };
-  
-  const getTextStyle = () => {
-    return {
-      ...styles.title,
-      color: isDark ? '#FFFFFF' : '#333333',
-    };
-  };
-  
-  const getHeaderStyle = () => {
-    return {
-      ...styles.sectionHeader,
-      color: isDark ? '#FFFFFF' : '#333333',
-    };
-  };
-  
-  const getRowTextStyle = () => {
-    return {
-      ...styles.rowText,
-      color: isDark ? '#FFFFFF' : '#333333',
-    };
-  };
-  
-  const getDangerButtonStyle = () => {
-    return {
-      ...styles.dangerButton,
-      backgroundColor: isDark ? '#331111' : '#FFEBEE',
-    };
-  };
   
   const handleClearAllData = async () => {
     Alert.alert(
@@ -83,80 +39,80 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={getContainerStyle()}>
-      <Text style={getTextStyle()}>Settings</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Settings</Text>
       
-      <View style={getSectionStyle()}>
-        <Text style={getHeaderStyle()}>Preferences</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Preferences</Text>
         
         <View style={styles.row}>
           <View style={styles.rowLabelContainer}>
-            <Moon size={20} color={isDark ? '#4CAF50' : '#4CAF50'} />
-            <Text style={getRowTextStyle()}>Dark Mode</Text>
+            <Moon size={20} color="#007AFF" />
+            <Text style={styles.rowText}>Dark Mode</Text>
           </View>
-          <Text style={styles.systemSettingText}>System</Text>
+          <Text style={styles.systemSettingText}>System (Disabled)</Text>
         </View>
         
         <View style={styles.row}>
-          <Text style={getRowTextStyle()}>Auto-save matches</Text>
+          <Text style={styles.rowText}>Auto-save matches</Text>
           <Switch
             value={autoSave}
             onValueChange={setAutoSave}
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={autoSave ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: '#D1E5FF' }}
+            thumbColor={autoSave ? '#007AFF' : '#f4f3f4'}
           />
         </View>
         
         <View style={styles.row}>
-          <Text style={getRowTextStyle()}>Haptic feedback</Text>
+          <Text style={styles.rowText}>Haptic feedback</Text>
           <Switch
             value={hapticFeedback}
             onValueChange={setHapticFeedback}
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={hapticFeedback ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: '#D1E5FF' }}
+            thumbColor={hapticFeedback ? '#007AFF' : '#f4f3f4'}
           />
         </View>
       </View>
       
-      <View style={getSectionStyle()}>
-        <Text style={getHeaderStyle()}>Default Betting Settings</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Default Betting Settings</Text>
         
         <View style={styles.row}>
-          <Text style={getRowTextStyle()}>Allow presses by default</Text>
+          <Text style={styles.rowText}>Allow presses by default</Text>
           <Switch
             value={allowPresses}
             onValueChange={setAllowPresses}
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={allowPresses ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: '#767577', true: '#D1E5FF' }}
+            thumbColor={allowPresses ? '#007AFF' : '#f4f3f4'}
           />
         </View>
       </View>
       
-      <View style={getSectionStyle()}>
-        <Text style={getHeaderStyle()}>Data Management</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionHeader}>Data Management</Text>
         
         <TouchableOpacity style={styles.actionRow} onPress={handleExportData}>
           <View style={styles.rowLabelContainer}>
-            <Share size={20} color={isDark ? '#4CAF50' : '#4CAF50'} />
-            <Text style={getRowTextStyle()}>Export Match Data</Text>
+            <Share size={20} color="#007AFF" />
+            <Text style={styles.rowText}>Export Match Data</Text>
           </View>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.actionRow} onPress={handleClearAllData}>
           <View style={styles.rowLabelContainer}>
-            <Trash2 size={20} color="#FF5252" />
-            <Text style={{ ...getRowTextStyle(), color: '#FF5252' }}>Clear All Match Data</Text>
+            <Trash2 size={20} color="#FF3B30" />
+            <Text style={{ ...styles.rowText, color: '#FF3B30' }}>Clear All Match Data</Text>
           </View>
         </TouchableOpacity>
       </View>
       
-      <TouchableOpacity style={getDangerButtonStyle()} onPress={handleClearAllData}>
-        <AlertTriangle size={20} color="#FF5252" />
+      <TouchableOpacity style={styles.dangerButton} onPress={handleClearAllData}>
+        <AlertTriangle size={20} color="#FF3B30" />
         <Text style={styles.dangerButtonText}>Clear All Match Data</Text>
       </TouchableOpacity>
       
       <View style={styles.versionContainer}>
-        <Info size={14} color={isDark ? '#888888' : '#888888'} style={styles.versionIcon} />
+        <Info size={14} color="#888888" style={styles.versionIcon} />
         <Text style={styles.versionText}>Golf Match Tracker v1.0.0</Text>
       </View>
     </View>
@@ -167,17 +123,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#F5F5F5',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 24,
     marginTop: 8,
+    color: '#333333',
   },
   section: {
     borderRadius: 12,
     marginBottom: 16,
     padding: 16,
+    backgroundColor: '#FFFFFF',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -190,6 +149,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 16,
+    color: '#333333',
   },
   row: {
     flexDirection: 'row',
@@ -206,6 +166,7 @@ const styles = StyleSheet.create({
   rowText: {
     fontSize: 16,
     marginLeft: 12,
+    color: '#333333',
   },
   systemSettingText: {
     fontSize: 14,
@@ -223,9 +184,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginTop: 16,
+    backgroundColor: '#FFEBEE',
   },
   dangerButtonText: {
-    color: '#FF5252',
+    color: '#FF3B30',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,

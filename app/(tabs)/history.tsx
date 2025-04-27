@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Calendar, Search } from 'lucide-react-native';
 import { useMatches } from '@/hooks/useMatches';
@@ -21,8 +21,6 @@ interface Match {
 }
 
 export default function HistoryScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
   const { matches, loadMatches } = useMatches();
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -50,69 +48,38 @@ export default function HistoryScreen() {
     );
   });
 
-  const getContainerStyle = () => {
-    return {
-      ...styles.container,
-      backgroundColor: isDark ? '#121212' : '#F5F5F5',
-    };
-  };
-
-  const getCardStyle = () => {
-    return {
-      ...styles.matchCard,
-      backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF',
-      shadowColor: isDark ? '#000000' : '#000000',
-    };
-  };
-
-  const getTextStyle = () => {
-    return {
-      ...styles.title,
-      color: isDark ? '#FFFFFF' : '#333333',
-    };
-  };
-
-  const getSearchInputStyle = () => {
-    return {
-      ...styles.searchInput,
-      backgroundColor: isDark ? '#2A2A2A' : '#FFFFFF',
-      color: isDark ? '#FFFFFF' : '#333333',
-      borderColor: isDark ? '#444444' : '#DDDDDD',
-    };
-  };
-
   const renderMatchItem = ({ item }: { item: Match }) => {
     const matchDate = new Date(item.createdAt);
     
     return (
       <TouchableOpacity 
-        style={getCardStyle()} 
+        style={styles.matchCard} 
         onPress={() => navigateToMatch(item.id)}
       >
         <View style={styles.matchHeader}>
-          <Text style={[styles.matchTitle, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+          <Text style={styles.matchTitle}>
             {item.title || 'Untitled Match'}
           </Text>
           <View style={[
             styles.statusBadge, 
-            { backgroundColor: item.isComplete ? '#E8F5E9' : '#FFF3E0' }
+            { backgroundColor: item.isComplete ? '#F0F8FF' : '#FFF3E0' }
           ]}>
             <Text style={[
               styles.statusText, 
-              { color: item.isComplete ? '#4CAF50' : '#FF9800' }
+              { color: item.isComplete ? '#007AFF' : '#FF9800' }
             ]}>
               {item.isComplete ? 'Completed' : 'In Progress'}
             </Text>
           </View>
         </View>
         
-        <Text style={[styles.teamsText, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+        <Text style={styles.teamsText}>
           {item.teams.map((team: MatchTeam) => team.name).join(' vs ')}
         </Text>
         
         <View style={styles.matchFooter}>
           <View style={styles.dateContainer}>
-            <Calendar size={14} color={isDark ? '#888888' : '#888888'} />
+            <Calendar size={14} color="#888888" />
             <Text style={styles.dateText}>
               {matchDate.toLocaleDateString(undefined, { 
                 year: 'numeric', 
@@ -134,17 +101,17 @@ export default function HistoryScreen() {
   };
 
   return (
-    <View style={getContainerStyle()}>
-      <Text style={getTextStyle()}>Match History</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Match History</Text>
       
       <View style={styles.searchContainer}>
-        <Search size={20} color={isDark ? '#888888' : '#888888'} style={styles.searchIcon} />
+        <Search size={20} color="#888888" style={styles.searchIcon} />
         <TouchableOpacity
-          style={getSearchInputStyle()}
+          style={styles.searchInput}
           activeOpacity={0.7}
           onPress={() => {/* Open search modal if needed */}}
         >
-          <Text style={{ color: isDark ? '#888888' : '#888888' }}>
+          <Text style={{ color: '#888888' }}>
             Search matches...
           </Text>
         </TouchableOpacity>
@@ -152,16 +119,16 @@ export default function HistoryScreen() {
       
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <Text style={{ color: isDark ? '#CCCCCC' : '#666666' }}>
+          <Text style={{ color: '#666666' }}>
             Loading matches...
           </Text>
         </View>
       ) : matches.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={{ color: isDark ? '#CCCCCC' : '#666666', textAlign: 'center' }}>
+          <Text style={{ color: '#666666', textAlign: 'center' }}>
             No match history found
           </Text>
-          <Text style={{ color: isDark ? '#999999' : '#888888', textAlign: 'center', marginTop: 8 }}>
+          <Text style={{ color: '#888888', textAlign: 'center', marginTop: 8 }}>
             Start a new match to begin tracking scores
           </Text>
         </View>
@@ -182,12 +149,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#F5F5F5',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 24,
     marginTop: 8,
+    color: '#333333',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -201,8 +170,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 44,
     borderWidth: 1,
+    borderColor: '#DDDDDD',
     borderRadius: 8,
     paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
   },
   listContent: {
@@ -212,6 +183,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
+    backgroundColor: '#FFFFFF',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -230,6 +202,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
+    color: '#333333',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -243,6 +216,7 @@ const styles = StyleSheet.create({
   teamsText: {
     fontSize: 14,
     marginBottom: 12,
+    color: '#666666',
   },
   matchFooter: {
     flexDirection: 'row',
@@ -259,14 +233,14 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   formatBadge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#F0F8FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   formatText: {
     fontSize: 12,
-    color: '#2196F3',
+    color: '#007AFF',
     fontWeight: '500',
   },
   loadingContainer: {
