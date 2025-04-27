@@ -19,7 +19,7 @@ interface Press {
   fromTeamId: string;
   toTeamId: string;
   holeIndex: number;
-  gameType: string;
+  pressType: string; // Changed from gameType to pressType
 }
 
 interface GameType {
@@ -34,7 +34,7 @@ interface StepPressModalProps {
   hole: Hole;
   teams: Team[];
   onClose: () => void;
-  onSave: (press: Omit<Press, 'id'>) => void;
+  onSave: (press: Omit<Press, 'id'>) => void; // This prop expects a Press object without an id
   teamColors?: {[key: string]: string}; // Fixed team colors mapping
 }
 
@@ -77,7 +77,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         fromTeamId,
         toTeamId,
         holeIndex: hole.number - 1,
-        gameType: gameType.id,
+        pressType: gameType.id, // Changed from gameType to pressType
       });
     });
     
@@ -110,33 +110,37 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
 
   const currentStep = getCurrentStep();
   
-  // Team selection step
+  // Team selection step - ensuring both teams are always shown as options to press
   const renderTeamSelectionStep = () => (
     <View>
-      <Text style={styles.pressDetailsTitle}>Press Details</Text>
+      <Text style={styles.pressDetailsTitle}>Who's Pressing?</Text>
       
       <View style={styles.teamsContainer}>
-        {teams.map((team, index) => {
-          const otherTeamId = index === 0 ? teams[1]?.id : teams[0]?.id;
-          const teamColor = teamColors[(index + 1).toString()] || team.color || '#888888';
-          
-          return (
-            <TouchableOpacity
-              key={team.id}
-              style={[
-                styles.teamOption,
-                { backgroundColor: teamColor }
-              ]}
-              onPress={() => {
-                setFromTeamId(team.id);
-                setToTeamId(otherTeamId);
-              }}
-            >
-              <Text style={styles.teamText}>
-                {team.name} to {teams.find(t => t.id === otherTeamId)?.name}
-              </Text>
-            </TouchableOpacity>
-          );
+        {teams.map((pressingTeam, pressingIdx) => {
+          // For each team, create a press option against each other team
+          return teams
+            .filter(t => t.id !== pressingTeam.id) // Exclude self
+            .map((targetTeam, targetIdx) => {
+              const pressingTeamColor = teamColors[(pressingIdx + 1).toString()] || pressingTeam.color || '#888888';
+              
+              return (
+                <TouchableOpacity
+                  key={`${pressingTeam.id}-${targetTeam.id}`}
+                  style={[
+                    styles.teamOption,
+                    { backgroundColor: pressingTeamColor }
+                  ]}
+                  onPress={() => {
+                    setFromTeamId(pressingTeam.id);
+                    setToTeamId(targetTeam.id);
+                  }}
+                >
+                  <Text style={styles.teamText}>
+                    {pressingTeam.name} pressing {targetTeam.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            });
         })}
       </View>
     </View>
@@ -162,7 +166,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
               {fromTeam?.name?.charAt(0) || 'T'}
             </Text>
           </View>
-          <Text style={styles.toText}>to</Text>
+          <Text style={styles.toText}>pressing</Text>
           <View style={[styles.teamCircle, { backgroundColor: toTeamColor }]}>
             <Text style={styles.teamInitial}>
               {toTeam?.name?.charAt(0) || 'T'}
