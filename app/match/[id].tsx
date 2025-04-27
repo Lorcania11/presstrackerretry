@@ -200,6 +200,26 @@ export default function MatchDetailScreen() {
     }
   };
 
+  const handleSavePress = (press: Omit<any, 'id'>) => {
+    if (!match) return;
+    
+    // Generate a unique ID for the press
+    const newPress = {
+      ...press,
+      id: Math.random().toString(36).substring(2, 9),
+    };
+    
+    // Add the press to the match presses array
+    const updatedMatch = {
+      ...match,
+      presses: [...match.presses, newPress],
+    };
+    
+    setMatch(updatedMatch);
+    updateMatch(updatedMatch);
+    handlePressModalClose();
+  };
+
   const handleOpenScorecard = () => {
     setShowScorecardFlow(true);
   };
@@ -340,10 +360,11 @@ export default function MatchDetailScreen() {
           hole={currentHole}
           teams={match.teams.map(team => ({
             ...team,
-            color: teamFixedColors[team.id] || team.color // Use fixed color mapping for press modal
+            color: teamFixedColors[team.id] || team.color
           }))}
           onClose={handlePressModalClose}
-          onSave={handleSavePresses}
+          onSave={handleSavePress}
+          teamColors={FIXED_TEAM_COLORS}
         />
       )}
     </SafeAreaView>
