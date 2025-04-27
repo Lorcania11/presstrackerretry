@@ -32,11 +32,10 @@ const PressNotification: React.FC<PressNotificationProps> = ({
     return showBack9 ? holeIndex >= 9 && holeIndex < 18 : holeIndex < 9;
   });
 
-  // Define team colors (fallback if not provided in press object)
-  const teamColors: Record<string, string> = {
-    '1': '#4CAE4F',  // Green
-    '2': '#FFC105',  // Yellow
-    '3': '#F44034',  // Red
+  // Define fixed team colors (important for consistent team identification)
+  const TEAM_COLORS: Record<string, string> = {
+    '1': '#007AFF', // Team 1 - Blue
+    '2': '#FF3B30', // Team 2 - Red
   };
 
   return (
@@ -47,10 +46,11 @@ const PressNotification: React.FC<PressNotificationProps> = ({
         const rowIndex = press.holeIndex - holeOffset;
         const columnOffset = 10; // Spacing between dots
         
-        // Look for team color first in teams array, then fallback to teamColors
-        const teamColor = teams.find(t => t.id === press.fromTeamId)?.color || 
-                         teamColors[press.fromTeamId] || 
-                         '#000000';
+        // Use fixed team colors based on team ID first, then look in teams array, 
+        // ensuring consistent color representation across the app
+        const teamColor = TEAM_COLORS[press.fromTeamId] || 
+                         teams.find(t => t.id === press.fromTeamId)?.color || 
+                         '#888888'; // Fallback to gray
         
         return (
           <View

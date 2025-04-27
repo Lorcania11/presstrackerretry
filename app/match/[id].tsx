@@ -18,6 +18,12 @@ import StepPressModal from '@/components/match/StepPressModal';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
 import { ChevronLeft, ArrowLeft, ArrowRight } from 'lucide-react-native';
 
+// Define fixed team colors
+const TEAM_COLORS = {
+  '1': '#007AFF', // Team 1 - Blue
+  '2': '#FF3B30', // Team 2 - Red
+};
+
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getMatch, updateMatch } = useMatches();
@@ -48,10 +54,17 @@ export default function MatchDetailScreen() {
         router.back();
         return;
       }
-      setMatch(loadedMatch);
+      
+      // Apply fixed team colors based on team IDs
+      const updatedTeams = loadedMatch.teams.map(team => ({
+        ...team,
+        color: TEAM_COLORS[team.id] || team.color || '#888888' // Fallback to existing color or gray
+      }));
+      
+      setMatch({...loadedMatch, teams: updatedTeams});
       
       // Initialize the scores state with current scores for this hole
-      initializeScores(loadedMatch, currentHoleIndex);
+      initializeScores({...loadedMatch, teams: updatedTeams}, currentHoleIndex);
     } catch (error) {
       Alert.alert('Error', 'Failed to load match');
       console.error(error);
@@ -210,7 +223,7 @@ export default function MatchDetailScreen() {
           id: team.id,
           name: team.name,
           initial: team.initial || team.name.charAt(0).toUpperCase(),
-          color: team.color,
+          color: TEAM_COLORS[team.id] || team.color || '#888888', // Use fixed team colors
           scores: match.holes.map(hole => {
             const score = hole.scores.find(s => s.teamId === team.id)?.score;
             return score;
@@ -247,7 +260,10 @@ export default function MatchDetailScreen() {
           {match.teams.map(team => (
             <View key={team.id} style={styles.teamRow}>
               <View style={styles.teamInfo}>
-                <View style={[styles.teamCircle, { backgroundColor: team.color }]}>
+                <View style={[
+                  styles.teamCircle, 
+                  { backgroundColor: TEAM_COLORS[team.id] || team.color || '#888888' }
+                ]}>
                   <Text style={styles.teamInitial}>
                     {team.initial || team.name.charAt(0).toUpperCase()}
                   </Text>
@@ -319,6 +335,7 @@ export default function MatchDetailScreen() {
           teams={match.teams}
           onClose={handlePressModalClose}
           onSave={handleSavePresses}
+          teamColors={TEAM_COLORS} // Pass fixed team colors to the press modal
         />
       )}
     </SafeAreaView>
