@@ -151,13 +151,15 @@ export default function ScorecardFlow({
                     {/* Press Indicators */}
                     {filteredPresses.some(
                       press => 
-                        press.fromTeamId === team.id && 
+                        press.toTeamId === team.id && 
                         press.holeIndex === (index + (showBack9 ? 9 : 0))
                     ) && (
                       <View 
                         style={[
                           styles.pressIndicator, 
-                          { backgroundColor: team.color }
+                          { 
+                            backgroundColor: teams.find(t => t.id === press.fromTeamId)?.color || team.color 
+                          }
                         ]} 
                       />
                     )}
