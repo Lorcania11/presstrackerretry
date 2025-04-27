@@ -21,7 +21,7 @@ import { ChevronLeft, Flag, Edit2, DollarSign } from 'lucide-react-native';
 
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { getMatchById, updateMatch } = useMatches();
+  const { getMatch, updateMatch } = useMatches();
   const dimensions = useWindowDimensions();
 
   const [match, setMatch] = useState<Match | null>(null);
@@ -43,7 +43,7 @@ export default function MatchDetailScreen() {
     }
 
     try {
-      const loadedMatch = await getMatchById(id.toString());
+      const loadedMatch = await getMatch(id.toString());
       if (!loadedMatch) {
         Alert.alert('Error', 'Match not found');
         router.back();
@@ -58,18 +58,18 @@ export default function MatchDetailScreen() {
     }
   };
 
-  const handleScoreUpdate = (holeNumber: number, teamId: string, score: number | null) => {
+  const handleScoreUpdate = (holeNumber: number, teamId: string, newScore: number | null) => {
     if (!match) return;
 
     const updatedHoles = match.holes.map(hole => {
       if (hole.number === holeNumber) {
         return {
           ...hole,
-          scores: hole.scores.map(score => {
-            if (score.teamId === teamId) {
-              return { ...score, score: score.score };
+          scores: hole.scores.map(scoreEntry => {
+            if (scoreEntry.teamId === teamId) {
+              return { ...scoreEntry, score: newScore };
             }
-            return score;
+            return scoreEntry;
           })
         };
       }
