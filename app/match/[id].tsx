@@ -287,7 +287,7 @@ export default function MatchScreen() {
               
               {match.teams.map(team => {
                 const completedHoles = team.scores.filter(score => score !== null).length;
-                const totalScore = team.scores.reduce((sum, score) => sum + (score || 0), 0);
+                const totalScore = team.scores.reduce((sum: number, score) => sum + (score || 0), 0);
                 
                 return (
                   <View key={team.id} style={styles.teamScoreRow}>
