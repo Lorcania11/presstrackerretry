@@ -17,6 +17,7 @@ import { useMatches } from '@/hooks/useMatches';
 import { useMatchContext } from '@/context/MatchContext';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
 import ScoreInputModal from '@/components/match/ScoreInputModal';
+import StepPressModal from '@/components/match/StepPressModal';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { calculateMatchPlay, calculateStrokePlay } from '@/utils/helpers';
 
@@ -43,29 +44,6 @@ interface Match {
   isComplete: boolean;
 }
 
-// Temporary component until StepPressModal is created
-const StepPressModal = ({ visible, onClose, onSubmit, teams, gameFormats, currentHole }: any) => (
-  <Modal
-    visible={visible}
-    transparent={true}
-    animationType="slide"
-    onRequestClose={onClose}
-  >
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Add Press</Text>
-        <Text style={styles.modalText}>Press Modal Placeholder</Text>
-        <TouchableOpacity 
-          style={styles.modalButton}
-          onPress={onClose}
-        >
-          <Text style={styles.modalButtonText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-);
-
 export default function MatchScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -79,6 +57,7 @@ export default function MatchScreen() {
   const [showPressModal, setShowPressModal] = useState(false);
   const [showScorecardModal, setShowScorecardModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showPressPrompt, setShowPressPrompt] = useState(false);
   const [scores, setScores] = useState<{[key: string]: number}>({});
 
   useEffect(() => {
@@ -137,25 +116,30 @@ export default function MatchScreen() {
     loadMatch();
   }, [id]);
 
-  const handleAddPress = (selectedPresses: Array<{from: string, to: string, type: string}>) => {
+  const handleAddPress = (selectedPresses: Array<{from: string, to: string, type: string, amount?: number}>) => {
+    if (!match) return;
+    
     // Process and add selected presses
-    selectedPresses.forEach((press) => {
-      const updatedMatch = {
-        ...match!,
-        presses: [...match!.presses, {
-          id: Math.random().toString(36).substring(2, 9),
-          fromTeamId: press.from,
-          toTeamId: press.to,
-          holeIndex: currentHole - 1,
-          pressType: press.type
-        }]
-      };
-      setMatch(updatedMatch);
-      setCurrentMatch(updatedMatch);
-      updateMatch(updatedMatch);
-    });
+    const newPresses = selectedPresses.map(press => ({
+      id: Math.random().toString(36).substring(2, 9),
+      fromTeamId: press.from,
+      toTeamId: press.to,
+      holeIndex: currentHole - 1,
+      pressType: press.type,
+      amount: press.amount
+    }));
+    
+    const updatedMatch = {
+      ...match,
+      presses: [...match.presses, ...newPresses]
+    };
+    
+    setMatch(updatedMatch);
+    setCurrentMatch(updatedMatch);
+    updateMatch(updatedMatch);
     
     setShowPressModal(false);
+    setShowPressPrompt(false);
   };
 
   const handleSaveScores = async () => {
@@ -203,6 +187,15 @@ export default function MatchScreen() {
     setCurrentMatch(updatedMatch);
     await updateMatch(updatedMatch);
     
+    // Show press prompt if match has presses enabled
+    if (match.enablePresses) {
+      setShowPressPrompt(true);
+    } else {
+      proceedAfterSave();
+    }
+  };
+  
+  const proceedAfterSave = () => {
     // Clear scores for next hole
     setScores({});
     
@@ -384,6 +377,54 @@ export default function MatchScreen() {
     );
   };
 
+  const renderPressPromptModal = () => {
+    if (!match) return null;
+    
+    return (
+      <Modal
+        visible={showPressPrompt}
+        transparent={true}
+        animationType="slide"
+      >
+        <View style={[styles.modalContainer, { backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)' }]}>
+          <View style={[styles.promptModalContent, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+            <View style={styles.promptHeader}>
+              <Text style={[styles.promptTitle, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                Add Press?
+              </Text>
+            </View>
+            
+            <Text style={[styles.promptText, { color: isDark ? '#CCCCCC' : '#666666' }]}>
+              Would you like to add a press on this hole?
+            </Text>
+            
+            <View style={styles.promptButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.promptButton, styles.promptSecondaryButton]}
+                onPress={() => {
+                  setShowPressPrompt(false);
+                  proceedAfterSave();
+                }}
+              >
+                <Text style={[styles.promptButtonText, { color: isDark ? '#4CAF50' : '#4CAF50' }]}>Skip</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.promptButton, styles.promptPrimaryButton]}
+                onPress={() => {
+                  setShowPressPrompt(false);
+                  setShowPressModal(true);
+                }}
+              >
+                <Text style={styles.promptPrimaryButtonText}>Yes, Add Press</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   if (isLoading || !match) {
     return (
       <View style={[styles.container, { backgroundColor: isDark ? '#121212' : '#F5F5F5' }]}>
@@ -516,17 +557,17 @@ export default function MatchScreen() {
         {/* Modals */}
         {renderMatchPreview()}
         {renderScorecardModal()}
+        {renderPressPromptModal()}
         
-        {showPressModal && (
-          <StepPressModal
-            visible={showPressModal}
-            onClose={() => setShowPressModal(false)}
-            onSubmit={handleAddPress}
-            teams={match.teams}
-            gameFormats={match.gameFormats}
-            currentHole={currentHole}
-          />
-        )}
+        <StepPressModal
+          visible={showPressModal}
+          onClose={() => setShowPressModal(false)}
+          onSubmit={handleAddPress}
+          teams={match.teams}
+          gameFormats={match.gameFormats}
+          currentHole={currentHole}
+          isDarkMode={isDark}
+        />
       </SafeAreaView>
     </GestureHandlerRootView>
   );
@@ -685,7 +726,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     width: '90%',
@@ -778,5 +818,52 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     marginRight: 40, // To balance the back button width
+  },
+  promptModalContent: {
+    width: '80%',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 5,
+  },
+  promptHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  promptTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  promptText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  promptButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  promptButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  promptPrimaryButton: {
+    backgroundColor: '#4CAF50',
+  },
+  promptSecondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  promptButtonText: {
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  promptPrimaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
