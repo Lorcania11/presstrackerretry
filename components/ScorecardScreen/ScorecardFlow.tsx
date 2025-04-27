@@ -149,20 +149,23 @@ export default function ScorecardFlow({
                     </Text>
                     
                     {/* Press Indicators */}
-                    {filteredPresses.some(
-                      press => 
-                        press.toTeamId === team.id && 
-                        press.holeIndex === (index + (showBack9 ? 9 : 0))
-                    ) && (
-                      <View 
-                        style={[
-                          styles.pressIndicator, 
-                          { 
-                            backgroundColor: teams.find(t => t.id === press.fromTeamId)?.color || team.color 
-                          }
-                        ]} 
-                      />
-                    )}
+                    {filteredPresses
+                      .filter(p => 
+                        p.toTeamId === team.id && 
+                        p.holeIndex === (index + (showBack9 ? 9 : 0))
+                      )
+                      .map((p, pIdx) => (
+                        <View 
+                          key={`press-${team.id}-${index}-${pIdx}`}
+                          style={[
+                            styles.pressIndicator, 
+                            { 
+                              backgroundColor: teams.find(t => t.id === p.fromTeamId)?.color || team.color 
+                            }
+                          ]} 
+                        />
+                      ))
+                    }
                   </View>
                 ))}
 
