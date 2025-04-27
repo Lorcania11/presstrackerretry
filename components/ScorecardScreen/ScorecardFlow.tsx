@@ -1,16 +1,31 @@
 // components/ScorecardScreen/ScorecardFlow.tsx
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { Svg, Line, Circle } from 'react-native-svg';
-import { router } from 'expo-router';
+import React, { useState, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  SafeAreaView,
+  ScrollView,
+  Animated,
+  Dimensions,
+} from 'react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import PressNotification from './PressNotification';
 
-interface ScorecardFlowProps {
+// Define fixed team colors (important for consistent team identification)
+const FIXED_TEAM_COLORS: Record<string, string> = {
+  '1': '#4CAE4F', // Team 1 - Green
+  '2': '#FFC105', // Team 2 - Yellow
+};
+
+interface ScorecardProps {
   teams: Array<{
     id: string;
     name: string;
     initial: string;
     color: string;
-    scores: Array<number | null>;
+    scores: (number | null)[];
   }>;
   presses: Array<{
     id: string;
@@ -21,180 +36,209 @@ interface ScorecardFlowProps {
   }>;
   currentHole: number;
   showBack9: boolean;
-  onBack?: () => void;
+  onBack: () => void;
   matchId: string;
 }
 
-export default function ScorecardFlow({
-  teams,
-  presses,
+const ScorecardFlow: React.FC<ScorecardProps> = ({ 
+  teams, 
+  presses, 
   currentHole,
-  showBack9,
+  showBack9 = false,
   onBack,
-  matchId,
-}: ScorecardFlowProps) {
-  const { width, height } = Dimensions.get('window');
+  matchId
+}) => {
+  const [showingBack9, setShowingBack9] = useState(showBack9);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const { width } = Dimensions.get('window');
   
-  // Calculate running totals for front 9, back 9, and total
-  const totals = teams.map(team => {
-    const front9 = team.scores.slice(0, 9).reduce((sum: number, score) => 
-      sum + (score !== null ? score : 0), 0);
+  const toggleNine = () => {
+    const toValue = showingBack9 ? 0 : -width;
     
-    const back9 = team.scores.slice(9, 18).reduce((sum: number, score) => 
-      sum + (score !== null ? score : 0), 0);
+    Animated.timing(slideAnim, {
+      toValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
     
+    setShowingBack9(!showingBack9);
+  };
+
+  // Helper function to calculate team totals for front 9, back 9, and total
+  const calculateTeamTotals = (teamScores: (number | null)[]) => {
+    const front9 = teamScores.slice(0, 9).reduce((sum, score) => 
+      sum + (score !== null ? score : 0), 0);
+    const back9 = teamScores.slice(9, 18).reduce((sum, score) => 
+      sum + (score !== null ? score : 0), 0);
     return {
-      teamId: team.id,
       front9,
       back9,
       total: front9 + back9
     };
-  });
-
-  // Filter presses based on front 9 or back 9
-  const filteredPresses = presses.filter(press => {
-    const holeIndex = press.holeIndex;
-    return showBack9 ? holeIndex >= 9 && holeIndex < 18 : holeIndex < 9;
-  });
-
-  // Get the currently displayed holes
-  const displayedHoles = showBack9 
-    ? [...Array(9)].map((_, i) => i + 10) 
-    : [...Array(9)].map((_, i) => i + 1);
-
-  const handlePressLogPress = () => {
-    if (matchId) {
-      router.push(`/match/press-log/${matchId}`);
-    }
   };
+  
+  // Get hole numbers as column headers
+  const frontNine = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const backNine = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+  
+  // Ensure teams have fixed colors based on their order
+  const teamsWithFixedColors = teams.map((team, idx) => {
+    // Team ID might not always be the 1-based index as a string, so we need to map it
+    const teamNumber = (idx + 1).toString();
+    return {
+      ...team,
+      fixedColor: FIXED_TEAM_COLORS[teamNumber] || team.color
+    };
+  });
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.chevron}>←</Text>
-          <Text style={styles.backButtonText}>Back</Text>
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <ArrowLeft size={24} color="#007AFF" />
         </TouchableOpacity>
-        
-        <Text style={styles.title}>Scorecard</Text>
-        
+        <Text style={styles.headerTitle}>Scorecard</Text>
+        <View style={styles.headerRight} />
+      </View>
+      
+      <View style={styles.toggleContainer}>
         <TouchableOpacity 
-          onPress={handlePressLogPress} 
-          style={styles.pressLogButton}
+          style={[styles.toggleButton, !showingBack9 && styles.activeToggle]} 
+          onPress={() => showingBack9 && toggleNine()}
         >
-          <Text style={styles.pressLogButtonText}>Press Log</Text>
+          <Text style={[styles.toggleText, !showingBack9 && styles.activeToggleText]}>
+            Front 9
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.toggleButton, showingBack9 && styles.activeToggle]} 
+          onPress={() => !showingBack9 && toggleNine()}
+        >
+          <Text style={[styles.toggleText, showingBack9 && styles.activeToggleText]}>
+            Back 9
+          </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Team Avatars */}
-      <View style={styles.teamRow}>
-        {teams.map(team => (
-          <View key={team.id} style={styles.teamAvatarContainer}>
-            <View style={[styles.teamAvatar, { backgroundColor: team.color }]}>
-              <Text style={styles.teamInitial}>{team.initial}</Text>
-            </View>
-            <Text style={styles.teamName} numberOfLines={1} ellipsizeMode="tail">
-              {team.name}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      {/* Scorecard */}
-      <ScrollView 
-        style={styles.scorecardContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hole Numbers Row */}
-        <View style={styles.scoreRow}>
-          <View style={styles.holeCell}>
-            <Text style={styles.holeLabel}>Hole</Text>
-          </View>
-          
-          {displayedHoles.map(hole => (
-            <View key={`hole-${hole}`} style={styles.scoreCell}>
-              <Text style={styles.holeNumber}>{hole}</Text>
-            </View>
-          ))}
-          
-          <View style={styles.totalCell}>
-            <View>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.rangeLabel}>{showBack9 ? '10-18' : '1-9'}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Separator Line */}
-        <View style={styles.separatorLine} />
-
-        {/* Team Scores */}
-        {teams.map((team, teamIndex) => (
-          <View key={team.id}>
-            <View style={styles.scoreRow}>
-              <View style={[styles.teamIndicatorCell, { backgroundColor: team.color }]}>
-                <Text style={styles.teamInitialSmall}>{team.initial}</Text>
-              </View>
-              
-              {team.scores
-                .slice(showBack9 ? 9 : 0, showBack9 ? 18 : 9)
-                .map((score, index) => (
-                  <View 
-                    key={`score-${index}`} 
-                    style={styles.scoreCell}
-                  >
-                    <Text style={styles.scoreText}>
-                      {score !== null ? score : '-'}
+      
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <Animated.View style={[styles.scrollContent, { transform: [{ translateX: slideAnim }] }]}>
+          <View style={styles.tableContainer}>
+            {/* First Scorecard (Front 9) */}
+            <View style={[styles.scorecard, { width }]}>
+              {/* Scorecard Header */}
+              <View style={styles.headerRow}>
+                <View style={styles.nameCell}>
+                  <Text style={styles.headerText}>Team</Text>
+                </View>
+                {frontNine.map(hole => (
+                  <View key={`hole-${hole}`} style={styles.holeCell}>
+                    <Text style={[styles.headerText, currentHole === hole && styles.currentHoleText]}>
+                      {hole}
                     </Text>
-                    
-                    {/* Press Indicators */}
-                    {filteredPresses
-                      .filter(p => 
-                        p.toTeamId === team.id && 
-                        p.holeIndex === (index + (showBack9 ? 9 : 0))
-                      )
-                      .map((p, pIdx) => (
-                        <View 
-                          key={`press-${team.id}-${index}-${pIdx}`}
-                          style={[
-                            styles.pressIndicator, 
-                            { 
-                              backgroundColor: teams.find(t => t.id === p.fromTeamId)?.color || team.color 
-                            }
-                          ]} 
-                        />
-                      ))
-                    }
                   </View>
                 ))}
-
-              <View style={styles.totalCell}>
-                <Text style={styles.totalScore}>
-                  {showBack9 ? 
-                    totals.find(t => t.teamId === team.id)?.back9 : 
-                    totals.find(t => t.teamId === team.id)?.front9}
-                </Text>
-                <Text style={styles.totalScore}>
-                  {totals.find(t => t.teamId === team.id)?.total}
-                </Text>
+                <View style={styles.totalCell}>
+                  <Text style={styles.headerText}>F9</Text>
+                </View>
               </View>
+              
+              {/* Team Scores */}
+              {teamsWithFixedColors.map((team, idx) => {
+                const totals = calculateTeamTotals(team.scores);
+                return (
+                  <View key={team.id} style={styles.scoreRow}>
+                    <View style={styles.nameCell}>
+                      <View style={[styles.teamCircle, { backgroundColor: team.fixedColor }]}>
+                        <Text style={styles.teamInitial}>{team.initial}</Text>
+                      </View>
+                    </View>
+                    
+                    {frontNine.map((hole, holeIdx) => (
+                      <View key={`${team.id}-hole-${hole}`} style={styles.holeCell}>
+                        <Text style={styles.scoreText}>
+                          {team.scores[holeIdx] !== null ? team.scores[holeIdx] : ''}
+                        </Text>
+                      </View>
+                    ))}
+                    
+                    <View style={styles.totalCell}>
+                      <Text style={styles.totalText}>{totals.front9}</Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
             
-            {teamIndex < teams.length - 1 && (
-              <View style={styles.teamSeparator} />
-            )}
+            {/* Second Scorecard (Back 9) */}
+            <View style={[styles.scorecard, { width }]}>
+              {/* Scorecard Header */}
+              <View style={styles.headerRow}>
+                <View style={styles.nameCell}>
+                  <Text style={styles.headerText}>Team</Text>
+                </View>
+                {backNine.map(hole => (
+                  <View key={`hole-${hole}`} style={styles.holeCell}>
+                    <Text style={[styles.headerText, currentHole === hole && styles.currentHoleText]}>
+                      {hole}
+                    </Text>
+                  </View>
+                ))}
+                <View style={styles.totalCell}>
+                  <Text style={styles.headerText}>B9</Text>
+                </View>
+                <View style={styles.totalCell}>
+                  <Text style={styles.headerText}>Tot</Text>
+                </View>
+              </View>
+              
+              {/* Team Scores */}
+              {teamsWithFixedColors.map((team, idx) => {
+                const totals = calculateTeamTotals(team.scores);
+                return (
+                  <View key={team.id} style={styles.scoreRow}>
+                    <View style={styles.nameCell}>
+                      <View style={[styles.teamCircle, { backgroundColor: team.fixedColor }]}>
+                        <Text style={styles.teamInitial}>{team.initial}</Text>
+                      </View>
+                    </View>
+                    
+                    {backNine.map((hole, holeIdx) => (
+                      <View key={`${team.id}-hole-${hole}`} style={styles.holeCell}>
+                        <Text style={styles.scoreText}>
+                          {team.scores[holeIdx + 9] !== null ? team.scores[holeIdx + 9] : ''}
+                        </Text>
+                      </View>
+                    ))}
+                    
+                    <View style={styles.totalCell}>
+                      <Text style={styles.totalText}>{totals.back9}</Text>
+                    </View>
+                    <View style={styles.totalCell}>
+                      <Text style={styles.totalText}>{totals.total}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </View>
-        ))}
+        </Animated.View>
       </ScrollView>
+      
+      {/* Press Notifications Overlay */}
+      <PressNotification 
+        presses={presses} 
+        matchId={matchId} 
+        showBack9={showingBack9}
+        teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor }))}
+      />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
@@ -202,149 +246,122 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  chevron: {
-    fontSize: 18,
-    color: '#007AFF',
-    marginRight: 4,
-  },
-  backButtonText: {
-    fontSize: 17,
-    color: '#007AFF',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  pressLogButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressLogButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  teamRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
-  teamAvatarContainer: {
-    alignItems: 'center',
-    marginHorizontal: 8,
+  backButton: {
+    padding: 8,
   },
-  teamAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  headerRight: {
+    width: 40,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#777777',
+  },
+  activeToggle: {
+    backgroundColor: '#007AFF',
+  },
+  activeToggleText: {
+    color: '#FFFFFF',
+  },
+  scrollContent: {
+    flexDirection: 'row',
+  },
+  tableContainer: {
+    flexDirection: 'row',
+  },
+  scorecard: {
+    paddingHorizontal: 8,
+    paddingTop: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 2,
+    borderBottomColor: '#DDDDDD',
+    paddingBottom: 8,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  nameCell: {
+    width: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  holeCell: {
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  totalCell: {
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+  },
+  headerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#555555',
+  },
+  currentHoleText: {
+    backgroundColor: '#007AFF',
+    color: '#FFFFFF',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    overflow: 'hidden',
+  },
+  scoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+  },
+  totalText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#333333',
+  },
+  teamCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   teamInitial: {
-    fontSize: 20,
-    fontWeight: 'bold',
     color: '#FFFFFF',
-  },
-  teamInitialSmall: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  teamName: {
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: 'center',
-    maxWidth: 100,
-  },
-  scorecardContainer: {
-    flex: 1,
-  },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  holeCell: {
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scoreCell: {
-    flex: 1,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  teamIndicatorCell: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 4,
-  },
-  totalCell: {
-    width: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  holeLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  holeNumber: {
-    fontSize: 14,
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  rangeLabel: {
-    fontSize: 12,
-    color: '#777777',
-    textAlign: 'center',
-  },
-  scoreText: {
     fontSize: 16,
-  },
-  totalScore: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    padding: 2,
-  },
-  separatorLine: {
-    height: 2,
-    backgroundColor: '#333333',
-    opacity: 0.2,
-    marginVertical: 4,
-  },
-  teamSeparator: {
-    height: 1,
-    backgroundColor: '#EEEEEE',
-    marginVertical: 4,
-  },
-  pressIndicator: {
-    position: 'absolute',
-    bottom: 4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    fontWeight: '600',
   },
 });
+
+export default ScorecardFlow;

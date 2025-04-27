@@ -33,9 +33,9 @@ const PressNotification: React.FC<PressNotificationProps> = ({
   });
 
   // Define fixed team colors (important for consistent team identification)
-  const TEAM_COLORS: Record<string, string> = {
-    '1': '#007AFF', // Team 1 - Blue
-    '2': '#FF3B30', // Team 2 - Red
+  const FIXED_TEAM_COLORS: Record<string, string> = {
+    '1': '#4CAE4F', // Team 1 - Green
+    '2': '#FFC105', // Team 2 - Yellow
   };
 
   return (
@@ -46,11 +46,12 @@ const PressNotification: React.FC<PressNotificationProps> = ({
         const rowIndex = press.holeIndex - holeOffset;
         const columnOffset = 10; // Spacing between dots
         
-        // Use fixed team colors based on team ID first, then look in teams array, 
-        // ensuring consistent color representation across the app
-        const teamColor = TEAM_COLORS[press.fromTeamId] || 
-                         teams.find(t => t.id === press.fromTeamId)?.color || 
-                         '#888888'; // Fallback to gray
+        // Find the matching team from the teams array
+        const pressTeam = teams.find(t => t.id === press.fromTeamId);
+        
+        // Use fixed team colors based on the team that initiated the press
+        // First try to match with the fixed colors, then fallback to provided color
+        const teamColor = pressTeam?.color || FIXED_TEAM_COLORS['1']; 
         
         return (
           <View

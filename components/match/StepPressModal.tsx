@@ -38,8 +38,8 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   onClose,
   onSave,
   teamColors = {
-    '1': '#007AFF', // Default blue for Team 1
-    '2': '#FF3B30', // Default red for Team 2
+    '1': '#4CAE4F', // Default green for Team 1
+    '2': '#FFC105', // Default yellow for Team 2
   }
 }) => {
   const [fromTeamId, setFromTeamId] = useState<string | null>(null);
@@ -67,8 +67,14 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   };
 
   const getTeamStyle = (teamId: string, selectedId: string | null) => {
-    // Use fixed team colors based on team ID for consistent team representation
-    const baseColor = teamColors[teamId] || '#888888';
+    // Get team index (position) in the teams array
+    const teamIndex = teams.findIndex(t => t.id === teamId);
+    // Team position is 1-indexed
+    const teamPosition = (teamIndex + 1).toString();
+    
+    // Use fixed team colors based on team position for consistent team representation
+    const baseColor = teamColors[teamPosition] || teams.find(t => t.id === teamId)?.color || '#888888';
+    
     return {
       backgroundColor: selectedId === teamId ? baseColor : 'white',
       borderColor: baseColor,
@@ -77,8 +83,12 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   };
 
   const getTeamTextStyle = (teamId: string, selectedId: string | null) => {
+    const teamIndex = teams.findIndex(t => t.id === teamId);
+    const teamPosition = (teamIndex + 1).toString();
+    const teamColor = teamColors[teamPosition] || teams.find(t => t.id === teamId)?.color || '#888888';
+    
     return {
-      color: selectedId === teamId ? 'white' : teamColors[teamId] || '#888888',
+      color: selectedId === teamId ? 'white' : teamColor,
     };
   };
 

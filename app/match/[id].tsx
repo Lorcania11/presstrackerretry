@@ -18,10 +18,10 @@ import StepPressModal from '@/components/match/StepPressModal';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
 import { ChevronLeft, ArrowLeft, ArrowRight } from 'lucide-react-native';
 
-// Define fixed team colors
-const TEAM_COLORS = {
-  '1': '#007AFF', // Team 1 - Blue
-  '2': '#FF3B30', // Team 2 - Red
+// Define fixed team colors (important for consistent team identification)
+const FIXED_TEAM_COLORS: Record<string, string> = {
+  '1': '#4CAE4F', // Team 1 - Green
+  '2': '#FFC105', // Team 2 - Yellow
 };
 
 export default function MatchDetailScreen() {
@@ -35,6 +35,9 @@ export default function MatchDetailScreen() {
   const [showPressModal, setShowPressModal] = useState(false);
   const [scores, setScores] = useState<{[teamId: string]: string}>({});
   const [showBack9, setShowBack9] = useState(false);
+
+  // Map to keep track of team IDs to fixed colors
+  const [teamFixedColors, setTeamFixedColors] = useState<{[teamId: string]: string}>({});
 
   useEffect(() => {
     loadMatch();
@@ -54,17 +57,18 @@ export default function MatchDetailScreen() {
         router.back();
         return;
       }
+      setMatch(loadedMatch);
       
-      // Apply fixed team colors based on team IDs
-      const updatedTeams = loadedMatch.teams.map(team => ({
-        ...team,
-        color: TEAM_COLORS[team.id] || team.color || '#888888' // Fallback to existing color or gray
-      }));
-      
-      setMatch({...loadedMatch, teams: updatedTeams});
+      // Assign fixed colors to teams based on their order
+      const fixedColors: {[teamId: string]: string} = {};
+      loadedMatch.teams.forEach((team, idx) => {
+        const teamNumber = (idx + 1).toString();
+        fixedColors[team.id] = FIXED_TEAM_COLORS[teamNumber] || team.color;
+      });
+      setTeamFixedColors(fixedColors);
       
       // Initialize the scores state with current scores for this hole
-      initializeScores({...loadedMatch, teams: updatedTeams}, currentHoleIndex);
+      initializeScores(loadedMatch, currentHoleIndex);
     } catch (error) {
       Alert.alert('Error', 'Failed to load match');
       console.error(error);
@@ -219,11 +223,11 @@ export default function MatchDetailScreen() {
   if (showScorecardFlow) {
     return (
       <ScorecardFlow
-        teams={match.teams.map(team => ({
+        teams={match.teams.map((team, idx) => ({
           id: team.id,
           name: team.name,
           initial: team.initial || team.name.charAt(0).toUpperCase(),
-          color: TEAM_COLORS[team.id] || team.color || '#888888', // Use fixed team colors
+          color: teamFixedColors[team.id] || team.color, // Use fixed color mapping
           scores: match.holes.map(hole => {
             const score = hole.scores.find(s => s.teamId === team.id)?.score;
             return score;
@@ -257,31 +261,33 @@ export default function MatchDetailScreen() {
         <Text style={styles.holeTitle}>Enter Scores - Hole {holeNumber}</Text>
         
         <ScrollView style={styles.teamsContainer}>
-          {match.teams.map(team => (
-            <View key={team.id} style={styles.teamRow}>
-              <View style={styles.teamInfo}>
-                <View style={[
-                  styles.teamCircle, 
-                  { backgroundColor: TEAM_COLORS[team.id] || team.color || '#888888' }
-                ]}>
-                  <Text style={styles.teamInitial}>
-                    {team.initial || team.name.charAt(0).toUpperCase()}
-                  </Text>
+          {match.teams.map((team, idx) => {
+            // Use fixed team color based on team order (first team green, second team yellow)
+            const teamColor = teamFixedColors[team.id] || team.color;
+            
+            return (
+              <View key={team.id} style={styles.teamRow}>
+                <View style={styles.teamInfo}>
+                  <View style={[styles.teamCircle, { backgroundColor: teamColor }]}>
+                    <Text style={styles.teamInitial}>
+                      {team.initial || team.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={styles.teamName}>{team.name}</Text>
                 </View>
-                <Text style={styles.teamName}>{team.name}</Text>
+                
+                <TextInput
+                  style={styles.scoreInput}
+                  keyboardType="numeric"
+                  maxLength={2}
+                  value={scores[team.id] || ''}
+                  onChangeText={(value) => handleScoreChange(team.id, value)}
+                  placeholder="0"
+                  placeholderTextColor="#888888"
+                />
               </View>
-              
-              <TextInput
-                style={styles.scoreInput}
-                keyboardType="numeric"
-                maxLength={2}
-                value={scores[team.id] || ''}
-                onChangeText={(value) => handleScoreChange(team.id, value)}
-                placeholder="0"
-                placeholderTextColor="#888888"
-              />
-            </View>
-          ))}
+            );
+          })}
         </ScrollView>
         
         <View style={styles.navigationContainer}>
@@ -332,10 +338,12 @@ export default function MatchDetailScreen() {
         <StepPressModal
           isVisible={showPressModal}
           hole={currentHole}
-          teams={match.teams}
+          teams={match.teams.map(team => ({
+            ...team,
+            color: teamFixedColors[team.id] || team.color // Use fixed color mapping for press modal
+          }))}
           onClose={handlePressModalClose}
           onSave={handleSavePresses}
-          teamColors={TEAM_COLORS} // Pass fixed team colors to the press modal
         />
       )}
     </SafeAreaView>
