@@ -4,32 +4,31 @@ import {
   StyleSheet, 
   Text, 
   View, 
-  ScrollView, 
   TouchableOpacity, 
   Alert,
-  useWindowDimensions,
   ActivityIndicator,
   SafeAreaView,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMatches } from '@/hooks/useMatches';
 import { Match, Team, Hole } from '@/context/MatchContext';
 import StepPressModal from '@/components/match/StepPressModal';
-import ScoreInputModal from '@/components/match/ScoreInputModal';
-import { calculateNetScore, formatCurrency } from '@/utils/helpers';
-import { ChevronLeft, Flag, Edit2, DollarSign } from 'lucide-react-native';
+import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
+import { ChevronLeft, ArrowLeft, ArrowRight } from 'lucide-react-native';
 
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getMatch, updateMatch } = useMatches();
-  const dimensions = useWindowDimensions();
 
   const [match, setMatch] = useState<Match | null>(null);
-  const [selectedHole, setSelectedHole] = useState<Hole | null>(null);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-  const [showScoreModal, setShowScoreModal] = useState(false);
-  const [showPressModal, setShowPressModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showScorecardFlow, setShowScorecardFlow] = useState(false);
+  const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
+  const [showPressModal, setShowPressModal] = useState(false);
+  const [scores, setScores] = useState<{[teamId: string]: string}>({});
+  const [showBack9, setShowBack9] = useState(false);
 
   useEffect(() => {
     loadMatch();
@@ -50,6 +49,9 @@ export default function MatchDetailScreen() {
         return;
       }
       setMatch(loadedMatch);
+      
+      // Initialize the scores state with current scores for this hole
+      initializeScores(loadedMatch, currentHoleIndex);
     } catch (error) {
       Alert.alert('Error', 'Failed to load match');
       console.error(error);
@@ -58,96 +60,131 @@ export default function MatchDetailScreen() {
     }
   };
 
-  const handleScoreUpdate = (holeNumber: number, teamId: string, newScore: number | null) => {
-    if (!match) return;
+  const initializeScores = (match: Match, holeIndex: number) => {
+    const hole = match.holes[holeIndex];
+    if (!hole) return;
+    
+    const initialScores = match.teams.reduce((obj, team) => {
+      const scoreEntry = hole.scores.find(s => s.teamId === team.id);
+      obj[team.id] = scoreEntry?.score !== null ? String(scoreEntry.score) : '';
+      return obj;
+    }, {} as {[teamId: string]: string});
+    
+    setScores(initialScores);
+  };
 
-    const updatedHoles = match.holes.map(hole => {
-      if (hole.number === holeNumber) {
+  const handleScoreChange = (teamId: string, value: string) => {
+    // Only allow numeric input
+    if (value === '' || /^\d+$/.test(value)) {
+      setScores(prev => ({ ...prev, [teamId]: value }));
+    }
+  };
+
+  const handlePrevHole = () => {
+    if (currentHoleIndex > 0) {
+      const newIndex = currentHoleIndex - 1;
+      setCurrentHoleIndex(newIndex);
+      initializeScores(match!, newIndex);
+      
+      if (newIndex === 8) {
+        setShowBack9(false);
+      }
+    }
+  };
+
+  const handleNextHole = () => {
+    if (!match || currentHoleIndex >= 17) return;
+    
+    // Save current hole scores first
+    saveCurrentHoleScores(false);
+    
+    const newIndex = currentHoleIndex + 1;
+    setCurrentHoleIndex(newIndex);
+    initializeScores(match, newIndex);
+    
+    if (newIndex === 9) {
+      setShowBack9(true);
+    }
+  };
+
+  const saveCurrentHoleScores = (showPressModalAfter: boolean = true) => {
+    if (!match) return;
+    
+    // Convert string scores to numbers (or null if empty)
+    const numericScores = Object.entries(scores).reduce((obj, [teamId, scoreStr]) => {
+      obj[teamId] = scoreStr ? parseInt(scoreStr, 10) : null;
+      return obj;
+    }, {} as {[teamId: string]: number | null});
+    
+    const updatedHoles = match.holes.map((hole, index) => {
+      if (index === currentHoleIndex) {
         return {
           ...hole,
-          scores: hole.scores.map(scoreEntry => {
-            if (scoreEntry.teamId === teamId) {
-              return { ...scoreEntry, score: newScore };
-            }
-            return scoreEntry;
-          })
+          scores: hole.scores.map(scoreEntry => ({
+            ...scoreEntry,
+            score: numericScores[scoreEntry.teamId]
+          })),
+          isComplete: Object.values(numericScores).every(score => score !== null)
         };
       }
       return hole;
     });
-
+    
     const updatedMatch = { ...match, holes: updatedHoles };
     setMatch(updatedMatch);
     updateMatch(updatedMatch);
-  };
-
-  const openScoreInput = (hole: Hole, teamId: string) => {
-    setSelectedHole(hole);
-    setSelectedTeam(teamId);
-    setShowScoreModal(true);
-  };
-
-  const closeScoreModal = () => {
-    setSelectedHole(null);
-    setSelectedTeam(null);
-    setShowScoreModal(false);
-  };
-
-  const openPressModal = (hole: Hole) => {
-    setSelectedHole(hole);
-    setShowPressModal(true);
-  };
-
-  const closePressModal = () => {
-    setSelectedHole(null);
-    setShowPressModal(false);
-  };
-
-  const handleSaveScore = (score: number) => {
-    if (selectedHole && selectedTeam) {
-      const updatedHoles = match!.holes.map(hole => {
-        if (hole.number === selectedHole.number) {
-          return {
-            ...hole,
-            scores: hole.scores.map(scoreEntry => {
-              if (scoreEntry.teamId === selectedTeam) {
-                return { ...scoreEntry, score: score };
-              }
-              return scoreEntry;
-            }),
-            isComplete: hole.scores.every(s => 
-              s.teamId === selectedTeam ? score !== null : s.score !== null
-            )
-          };
-        }
-        return hole;
-      });
-
-      const updatedMatch = { ...match!, holes: updatedHoles };
-      setMatch(updatedMatch);
-      updateMatch(updatedMatch);
+    
+    // Show press modal if this is a completed hole
+    if (showPressModalAfter && match.enablePresses && 
+        Object.values(numericScores).every(score => score !== null)) {
+      setShowPressModal(true);
     }
-    closeScoreModal();
   };
 
-  const isHoleCompleted = (hole: Hole) => {
-    return hole.scores.every(s => s.score !== null);
+  const handleSave = () => {
+    saveCurrentHoleScores(true);
   };
 
-  const getHoleScore = (hole: Hole, teamId: string) => {
-    const score = hole.scores.find(s => s.teamId === teamId)?.score;
-    return score !== null && score !== undefined ? score : '-';
+  const handlePressModalClose = () => {
+    setShowPressModal(false);
+    
+    // Move to next hole automatically after press modal closes
+    if (currentHoleIndex < 17) {
+      const newIndex = currentHoleIndex + 1;
+      setCurrentHoleIndex(newIndex);
+      if (match) {
+        initializeScores(match, newIndex);
+      }
+      if (newIndex === 9) {
+        setShowBack9(true);
+      }
+    }
   };
 
-  const getTeamTotal = (teamId: string) => {
-    if (!match) return '-';
-    const teamScores = match.holes.map(hole => {
-      const scoreEntry = hole.scores.find(s => s.teamId === teamId);
-      return scoreEntry?.score;
-    });
-    const validScores = teamScores.filter(score => score !== null && score !== undefined) as number[];
-    if (validScores.length === 0) return '-';
-    return validScores.reduce((sum, score) => sum + score, 0);
+  const handleSavePresses = (updatedHole: Hole) => {
+    if (!match) return;
+    
+    const updatedHoles = match.holes.map((hole, index) => 
+      index === currentHoleIndex ? updatedHole : hole
+    );
+    const updatedMatch = { ...match, holes: updatedHoles };
+    setMatch(updatedMatch);
+    updateMatch(updatedMatch);
+    setShowPressModal(false);
+    
+    // Move to next hole automatically after press modal closes
+    if (currentHoleIndex < 17) {
+      const newIndex = currentHoleIndex + 1;
+      setCurrentHoleIndex(newIndex);
+      initializeScores(updatedMatch, newIndex);
+      if (newIndex === 9) {
+        setShowBack9(true);
+      }
+    }
+  };
+
+  const handleOpenScorecard = () => {
+    setShowScorecardFlow(true);
   };
 
   if (isLoading) {
@@ -166,133 +203,122 @@ export default function MatchDetailScreen() {
     );
   }
 
-  const isColumnAvailable = (i: number) => i < 9 || dimensions.width >= 768;
-  const displayedHoles = match.holes.filter((_, i) => isColumnAvailable(i));
+  if (showScorecardFlow) {
+    return (
+      <ScorecardFlow
+        teams={match.teams.map(team => ({
+          id: team.id,
+          name: team.name,
+          initial: team.initial || team.name.charAt(0).toUpperCase(),
+          color: team.color,
+          scores: match.holes.map(hole => {
+            const score = hole.scores.find(s => s.teamId === team.id)?.score;
+            return score;
+          })
+        }))}
+        presses={match.presses}
+        currentHole={currentHoleIndex + 1}
+        showBack9={showBack9}
+        onBack={() => setShowScorecardFlow(false)}
+        matchId={id as string}
+      />
+    );
+  }
+
+  const currentHole = match.holes[currentHoleIndex];
+  const holeNumber = currentHoleIndex + 1;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ChevronLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{match.title}</Text>
+        <TouchableOpacity style={styles.scorecardButton} onPress={handleOpenScorecard}>
+          <Text style={styles.scorecardButtonText}>View Scorecard</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.container} horizontal>
-        <View>
-          <View style={styles.scoreboardHeader}>
-            <View style={styles.teamColumn}>
-              <Text style={styles.teamHeaderText}>Team</Text>
-            </View>
-            {displayedHoles.map(hole => (
-              <TouchableOpacity 
-                key={`header-${hole.number}`}
-                style={[
-                  styles.holeColumn, 
-                  isHoleCompleted(hole) && styles.completedHoleColumn
-                ]}
-                onPress={() => match.enablePresses && openPressModal(hole)}
-              >
-                <Text style={styles.holeNumber}>{hole.number}</Text>
-                {match.enablePresses && hole.presses && hole.presses.length > 0 && (
-                  <View style={styles.pressIndicator}>
-                    <DollarSign size={12} color="#007AFF" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-            <View style={styles.totalColumn}>
-              <Text style={styles.totalHeaderText}>Total</Text>
-            </View>
-          </View>
-
+      <View style={styles.scoreInputContainer}>
+        <Text style={styles.holeTitle}>Enter Scores - Hole {holeNumber}</Text>
+        
+        <ScrollView style={styles.teamsContainer}>
           {match.teams.map(team => (
             <View key={team.id} style={styles.teamRow}>
-              <View style={styles.teamColumn}>
-                <View 
-                  style={[
-                    styles.teamBadge, 
-                    { backgroundColor: team.color || '#007AFF' }
-                  ]}
-                >
+              <View style={styles.teamInfo}>
+                <View style={[styles.teamCircle, { backgroundColor: team.color }]}>
                   <Text style={styles.teamInitial}>
-                    {team.initial || team.name.charAt(0)}
+                    {team.initial || team.name.charAt(0).toUpperCase()}
                   </Text>
                 </View>
-                <Text style={styles.teamName}>
-                  {team.name}
-                </Text>
+                <Text style={styles.teamName}>{team.name}</Text>
               </View>
-
-              {displayedHoles.map(hole => (
-                <TouchableOpacity 
-                  key={`${team.id}-${hole.number}`}
-                  style={[
-                    styles.scoreCell,
-                    isHoleCompleted(hole) && styles.completedScoreCell
-                  ]}
-                  onPress={() => openScoreInput(hole, team.id)}
-                >
-                  <Text style={styles.scoreText}>
-                    {getHoleScore(hole, team.id)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              <View style={styles.totalCell}>
-                <Text style={styles.totalText}>
-                  {getTeamTotal(team.id)}
-                </Text>
-              </View>
+              
+              <TextInput
+                style={styles.scoreInput}
+                keyboardType="numeric"
+                maxLength={2}
+                value={scores[team.id] || ''}
+                onChangeText={(value) => handleScoreChange(team.id, value)}
+                placeholder="0"
+                placeholderTextColor="#888888"
+              />
             </View>
           ))}
-
-          {match.enablePresses && (
-            <View style={styles.pressSection}>
-              <Text style={styles.pressSectionTitle}>
-                Presses
-              </Text>
-              <View style={styles.pressTable}>
-                {/* Press data could be rendered here */}
-                <Text style={styles.pressSummary}>
-                  {match.presses && match.presses.length > 0 
-                    ? `${match.presses.length} active presses` 
-                    : 'No active presses'}
-                </Text>
-              </View>
-            </View>
-          )}
+        </ScrollView>
+        
+        <View style={styles.navigationContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.navigationButton, 
+              currentHoleIndex === 0 && styles.disabledButton
+            ]} 
+            onPress={handlePrevHole}
+            disabled={currentHoleIndex === 0}
+          >
+            <ArrowLeft size={20} color={currentHoleIndex === 0 ? "#999999" : "#FFFFFF"} />
+            <Text style={[
+              styles.navigationButtonText,
+              currentHoleIndex === 0 && styles.disabledButtonText
+            ]}>
+              Previous Hole
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.saveButton} 
+            onPress={handleSave}
+          >
+            <Text style={styles.saveButtonText}>Save Scores</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[
+              styles.navigationButton,
+              currentHoleIndex === 17 && styles.disabledButton
+            ]} 
+            onPress={handleNextHole}
+            disabled={currentHoleIndex === 17}
+          >
+            <Text style={[
+              styles.navigationButtonText,
+              currentHoleIndex === 17 && styles.disabledButtonText
+            ]}>
+              Next Hole
+            </Text>
+            <ArrowRight size={20} color={currentHoleIndex === 17 ? "#999999" : "#FFFFFF"} />
+          </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
 
-      {selectedHole && showScoreModal && (
-        <ScoreInputModal
-          isVisible={showScoreModal}
-          hole={selectedHole}
-          teamId={selectedTeam!}
-          teamName={match.teams.find(t => t.id === selectedTeam)?.name || ''}
-          onClose={closeScoreModal}
-          onSave={handleSaveScore}
-          currentScore={
-            selectedHole.scores.find(s => s.teamId === selectedTeam)?.score || null
-          }
-        />
-      )}
-
-      {selectedHole && showPressModal && (
+      {showPressModal && (
         <StepPressModal
           isVisible={showPressModal}
-          hole={selectedHole}
+          hole={currentHole}
           teams={match.teams}
-          onClose={closePressModal}
-          onSave={(updatedHole) => {
-            const updatedHoles = match.holes.map(h => 
-              h.number === updatedHole.number ? updatedHole : h
-            );
-            const updatedMatch = { ...match, holes: updatedHoles };
-            setMatch(updatedMatch);
-            updateMatch(updatedMatch);
-          }}
+          onClose={handlePressModalClose}
+          onSave={handleSavePresses}
         />
       )}
     </SafeAreaView>
@@ -300,16 +326,14 @@ export default function MatchDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F5F5',
-  },
   container: {
     flex: 1,
+    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
@@ -317,12 +341,25 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EEEEEE',
   },
   backButton: {
-    marginRight: 12,
+    padding: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
+  },
+  scorecardButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scorecardButtonText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -341,126 +378,108 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     textAlign: 'center',
   },
-  scoreboardHeader: {
-    flexDirection: 'row',
+  scoreInputContainer: {
+    flex: 1,
+    padding: 16,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    margin: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  teamColumn: {
-    width: 100,
-    paddingLeft: 16,
-    paddingVertical: 12,
-    justifyContent: 'center',
-  },
-  holeColumn: {
-    width: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    position: 'relative',
-  },
-  completedHoleColumn: {
-    backgroundColor: '#F0F8FF',
-  },
-  holeNumber: {
-    fontSize: 14,
-    fontWeight: '600',
+  holeTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 20,
     color: '#333333',
   },
-  pressIndicator: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-  },
-  totalColumn: {
-    width: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8F8F8',
-  },
-  teamHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
-  },
-  totalHeaderText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
+  teamsContainer: {
+    flex: 1,
+    marginBottom: 20,
   },
   teamRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
-    backgroundColor: '#FFFFFF',
   },
-  teamBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  teamInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  teamCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
-    marginRight: 8,
+    alignItems: 'center',
   },
   teamInitial: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
   },
   teamName: {
-    fontSize: 14,
+    marginLeft: 12,
+    fontSize: 16,
     fontWeight: '500',
     color: '#333333',
-    marginTop: 6,
   },
-  scoreCell: {
-    width: 40,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderLeftWidth: 1,
-    borderLeftColor: '#EEEEEE',
-  },
-  completedScoreCell: {
-    backgroundColor: '#F0F8FF',
-  },
-  scoreText: {
-    fontSize: 16,
-    color: '#333333',
-  },
-  totalCell: {
+  scoreInput: {
     width: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F8F8F8',
-  },
-  totalText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
-  },
-  pressSection: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    marginTop: 16,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#DDDDDD',
     borderRadius: 8,
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  pressSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 12,
-  },
-  pressTable: {
-    padding: 12,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 8,
-  },
-  pressSummary: {
-    color: '#666666',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 12,
+    fontSize: 18,
     textAlign: 'center',
+    color: '#333333',
+  },
+  navigationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  navigationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  navigationButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    marginLeft: 4,
+    marginRight: 4,
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
+  },
+  disabledButtonText: {
+    color: '#999999',
   },
 });
