@@ -13,10 +13,54 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMatches } from '@/hooks/useMatches';
-import { Match, Team, Hole } from '@/context/MatchContext';
+import { Match as ContextMatch, Team } from '@/context/MatchContext';
 import StepPressModal from '@/components/match/StepPressModal';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
 import { ChevronLeft, ArrowLeft, ArrowRight } from 'lucide-react-native';
+
+// Define interfaces for type safety
+interface HoleScore {
+  teamId: string;
+  score: number | null;
+}
+
+interface Press {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  holeIndex: number;
+  pressType: string;
+}
+
+interface Hole {
+  number: number;
+  scores: HoleScore[];
+  presses: Press[];
+  isComplete: boolean;
+}
+
+// Define our component's Match interface to match with useMatches hook's definition
+interface MatchDetail {
+  id: string;
+  title: string;
+  teams: {
+    id: string;
+    name: string;
+    initial?: string;
+    color?: string;
+    scores: (number | null)[];
+  }[];
+  gameFormats: Array<{
+    type: string;
+    betAmount: number;
+  }>;
+  presses: Press[];
+  holes: Hole[];
+  playFormat: "match" | "stroke";
+  enablePresses: boolean;
+  createdAt: string;
+  isComplete: boolean;
+}
 
 // Define fixed team colors (important for consistent team identification)
 const FIXED_TEAM_COLORS: Record<string, string> = {
@@ -28,7 +72,7 @@ export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams();
   const { getMatch, updateMatch } = useMatches();
 
-  const [match, setMatch] = useState<Match | null>(null);
+  const [match, setMatch] = useState<MatchDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showScorecardFlow, setShowScorecardFlow] = useState(false);
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
@@ -58,18 +102,29 @@ export default function MatchDetailScreen() {
         router.back();
         return;
       }
-      setMatch(loadedMatch);
+      
+      // Transform the match to fit our MatchDetail interface
+      const matchDetail: MatchDetail = {
+        ...loadedMatch,
+        teams: loadedMatch.teams.map(team => ({
+          ...team,
+          initial: team.initial || team.name.charAt(0).toUpperCase(),
+          color: team.color || '#CCCCCC'
+        }))
+      };
+      
+      setMatch(matchDetail);
       
       // Assign fixed colors to teams based on their order
       const fixedColors: {[teamId: string]: string} = {};
-      loadedMatch.teams.forEach((team, idx) => {
+      matchDetail.teams.forEach((team, idx) => {
         const teamNumber = (idx + 1).toString();
-        fixedColors[team.id] = FIXED_TEAM_COLORS[teamNumber] || team.color;
+        fixedColors[team.id] = FIXED_TEAM_COLORS[teamNumber] || team.color || '#CCCCCC';
       });
       setTeamFixedColors(fixedColors);
       
       // Initialize the scores state with current scores for this hole
-      initializeScores(loadedMatch, currentHoleIndex);
+      initializeScores(matchDetail, currentHoleIndex);
     } catch (error) {
       Alert.alert('Error', 'Failed to load match');
       console.error(error);
@@ -78,13 +133,13 @@ export default function MatchDetailScreen() {
     }
   };
 
-  const initializeScores = (match: Match, holeIndex: number) => {
+  const initializeScores = (match: MatchDetail, holeIndex: number) => {
     const hole = match.holes[holeIndex];
     if (!hole) return;
     
     const initialScores = match.teams.reduce((obj, team) => {
-      const scoreEntry = hole.scores.find(s => s.teamId === team.id);
-      obj[team.id] = scoreEntry?.score !== null ? String(scoreEntry.score) : '';
+      const scoreEntry = hole.scores.find((s: HoleScore) => s.teamId === team.id);
+      obj[team.id] = scoreEntry && scoreEntry.score !== null ? String(scoreEntry.score) : '';
       return obj;
     }, {} as {[teamId: string]: string});
     
@@ -154,7 +209,11 @@ export default function MatchDetailScreen() {
       return hole;
     });
     
-    const updatedMatch = { ...match, holes: updatedHoles };
+    const updatedMatch: MatchDetail = { 
+      ...match, 
+      holes: updatedHoles
+    };
+    
     setMatch(updatedMatch);
     updateMatch(updatedMatch);
     
@@ -186,7 +245,12 @@ export default function MatchDetailScreen() {
     const updatedHoles = match.holes.map((hole, index) => 
       index === currentHoleIndex ? updatedHole : hole
     );
-    const updatedMatch = { ...match, holes: updatedHoles };
+    
+    const updatedMatch: MatchDetail = { 
+      ...match, 
+      holes: updatedHoles 
+    };
+    
     setMatch(updatedMatch);
     updateMatch(updatedMatch);
     setShowPressModal(false);
@@ -200,17 +264,17 @@ export default function MatchDetailScreen() {
     }
   };
 
-  const handleSavePress = (press: Omit<any, 'id'>) => {
+  const handleSavePress = (press: Omit<Press, 'id'>) => {
     if (!match) return;
     
     // Generate a unique ID for the press
-    const newPress = {
-      ...press,
+    const newPress: Press = {
+      ...press as any, // Use type assertion to fix compatibility
       id: Math.random().toString(36).substring(2, 9),
     };
     
     // Add the press to the match presses array
-    const updatedMatch = {
+    const updatedMatch: MatchDetail = {
       ...match,
       presses: [...match.presses, newPress],
     };
@@ -249,9 +313,9 @@ export default function MatchDetailScreen() {
           id: team.id,
           name: team.name,
           initial: team.initial || team.name.charAt(0).toUpperCase(),
-          color: teamFixedColors[team.id] || team.color, // Use fixed color mapping
+          color: teamFixedColors[team.id] || team.color || '#CCCCCC', // Ensure color is always defined
           scores: match.holes.map(hole => {
-            const score = hole.scores.find(s => s.teamId === team.id)?.score;
+            const score = hole.scores.find(s => s.teamId === team.id)?.score || null; // Ensure score is number | null
             return score;
           })
         }))}
@@ -264,7 +328,7 @@ export default function MatchDetailScreen() {
     );
   }
 
-  const currentHole = match.holes[currentHoleIndex];
+  const currentHole = match?.holes[currentHoleIndex];
   const holeNumber = currentHoleIndex + 1;
 
   return (
@@ -368,13 +432,13 @@ export default function MatchDetailScreen() {
         </View>
       )}
 
-      {showPressModal && (
+      {showPressModal && match && currentHole && (
         <StepPressModal
           isVisible={showPressModal}
           hole={currentHole}
           teams={match.teams.map(team => ({
             ...team,
-            color: teamFixedColors[team.id] || team.color
+            color: teamFixedColors[team.id] || team.color || '#CCCCCC'
           }))}
           onClose={handlePressModalClose}
           onSave={handleSavePress}
@@ -382,8 +446,8 @@ export default function MatchDetailScreen() {
           gameFormats={match.gameFormats.map(format => ({
             ...format,
             label: format.type === 'front' ? 'Front 9' : 
-                   format.type === 'back' ? 'Back 9' : 
-                   format.type === 'total' ? 'Total 18' : format.type
+                 format.type === 'back' ? 'Back 9' : 
+                 format.type === 'total' ? 'Total 18' : format.type
           }))}
         />
       )}

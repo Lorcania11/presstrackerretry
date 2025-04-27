@@ -67,12 +67,21 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
   // Helper function to calculate team totals for front 9, back 9, and total
   const calculateTeamTotals = (teamScores: (number | null)[]) => {
     const front9 = teamScores.slice(0, 9).reduce((sum, score) => 
-      sum + (score !== null ? score : 0), 0);
+      // Fix: Ensure sum is treated as a number, not potentially null
+      (sum as number) + (score !== null ? score : 0), 
+      0  // Initialize with 0 instead of undefined
+    );
+    
     const back9 = teamScores.slice(9, 18).reduce((sum, score) => 
-      sum + (score !== null ? score : 0), 0);
+      // Fix: Ensure sum is treated as a number, not potentially null
+      (sum as number) + (score !== null ? score : 0), 
+      0  // Initialize with 0 instead of undefined
+    );
+    
     return {
       front9,
       back9,
+      // Fix: Ensure we're adding two numbers, not potentially null values
       total: front9 + back9
     };
   };
