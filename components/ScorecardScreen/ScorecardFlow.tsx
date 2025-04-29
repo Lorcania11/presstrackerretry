@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import PressNotification from './PressNotification';
+import PressIndicator from './PressIndicator';
 
 // Define fixed team colors (important for consistent team identification)
 const FIXED_TEAM_COLORS: Record<string, string> = {
@@ -165,6 +166,13 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
                         <Text style={styles.scoreText}>
                           {team.scores[holeIdx] !== null ? team.scores[holeIdx] : ''}
                         </Text>
+                        <PressIndicator 
+                          teamId={team.id}
+                          holeNumber={hole}
+                          presses={presses}
+                          showBack9={false}
+                          teams={teamsWithFixedColors}
+                        />
                       </View>
                     ))}
                     
@@ -214,6 +222,13 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
                         <Text style={styles.scoreText}>
                           {team.scores[holeIdx + 9] !== null ? team.scores[holeIdx + 9] : ''}
                         </Text>
+                        <PressIndicator 
+                          teamId={team.id}
+                          holeNumber={hole}
+                          presses={presses}
+                          showBack9={true}
+                          teams={teamsWithFixedColors}
+                        />
                       </View>
                     ))}
                     
@@ -325,6 +340,7 @@ const styles = StyleSheet.create({
     width: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative', // Add this to allow absolute positioning of the indicators
   },
   totalCell: {
     width: 40,
