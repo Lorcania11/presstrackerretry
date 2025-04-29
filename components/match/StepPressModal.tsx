@@ -145,6 +145,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   };
 
   const handleSubmitAllPresses = () => {
+    // Make sure each added press is submitted individually
     addedPresses.forEach(press => {
       onSave({
         fromTeamId: press.fromTeamId,

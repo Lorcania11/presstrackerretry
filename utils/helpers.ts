@@ -270,47 +270,36 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
     // Ensure holeStarted is defined with a safe default value if undefined
     const holeStarted = press.holeStarted || 1;
     
-    // Filter for relevant holes - only look at holes from where the press started
-    const relevantHoles = holes.filter(
-      hole => hole.number >= holeStarted && hole.isComplete
-    );
-    
-    // Get the press type to determine range of holes to consider
-    const pressType = press.pressType;
-    let minHole = 1;
+    // Set min and max hole numbers based on press type
+    let minHole = holeStarted; // Always start from where the press was made
     let maxHole = 18;
     
-    // Set min and max hole numbers based on press type
-    if (pressType === 'front9') {
-      minHole = 1;
+    if (press.pressType === 'front9') {
+      // Front 9 press - end at hole 9
       maxHole = 9;
-    } else if (pressType === 'back9') {
-      minHole = 10;
+      // Make sure we're not starting beyond hole 9
+      if (minHole > 9) minHole = 9;
+    } else if (press.pressType === 'back9') {
+      // Back 9 press - start at hole 10 (or press start) and end at 18
+      minHole = Math.max(10, holeStarted);
       maxHole = 18;
-    } else if (pressType === 'total18') {
-      // For total press, consider if it started on front 9 or back 9
-      if (holeStarted >= 1 && holeStarted <= 9) {
-        minHole = holeStarted;  // Start from the hole where the press was made
-        maxHole = 18;  // End at hole 18
-      } else if (holeStarted >= 10 && holeStarted <= 18) {
-        minHole = holeStarted;  // Start from the hole where the press was made
-        maxHole = 18;  // End at hole 18
-      }
     }
+    // total18 press uses defaults (start at press hole, end at 18)
     
-    // Filter holes further to include only those within the press type range
-    const pressHoles = relevantHoles.filter(hole => 
-      hole.number >= minHole && hole.number <= maxHole
+    // Filter for relevant completed holes within the press range
+    const pressHoles = holes.filter(hole => 
+      hole.isComplete && 
+      hole.number >= minHole && 
+      hole.number <= maxHole
     );
     
-    // Rest of the calculation logic remains the same
     if (playFormat === 'match') {
       let team1Wins = 0;
       let team2Wins = 0;
       let halvedHoles = 0;
       let completedHoles = 0;
       
-      pressHoles.forEach((hole: Hole) => {
+      pressHoles.forEach(hole => {
         const team1Score = hole.scores.find((s: HoleScore) => s.teamId === team1.id)?.score;
         const team2Score = hole.scores.find((s: HoleScore) => s.teamId === team2.id)?.score;
         
@@ -337,9 +326,9 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
         };
       }
       
-      // Calculate max possible holes based on press type
-      const maxPossibleHoles = (pressType === 'front9' ? 9 : (pressType === 'back9' ? 9 : 18));
-      const holesRemaining = maxPossibleHoles - completedHoles;
+      // Calculate remaining holes for this specific press type
+      const totalPressHoles = maxHole - minHole + 1;
+      const holesRemaining = totalPressHoles - completedHoles;
       const difference = team1Wins - team2Wins;
       
       // Determine if the press match is mathematically over
@@ -383,7 +372,6 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
       };
       
     } else {
-      // For stroke play, compare total strokes
       let team1Total = 0;
       let team2Total = 0;
       let completedHoles = 0;
@@ -410,8 +398,8 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
         };
       }
       
-      const maxPossibleHoles = (pressType === 'front9' ? 9 : (pressType === 'back9' ? 9 : 18));
-      const isComplete = completedHoles === maxPossibleHoles;
+      const totalPressHoles = maxHole - minHole + 1;
+      const isComplete = completedHoles === totalPressHoles;
       
       let status = '';
       let winner = null;

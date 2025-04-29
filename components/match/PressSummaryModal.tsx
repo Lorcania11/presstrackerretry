@@ -135,7 +135,24 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       return;
     }
     
-    const pressResults = calculatePressResults(teams, holesWithPresses, match.playFormat);
+    // Make sure we're processing each press individually
+    // This is the key change - ensure we're calculating results for all presses
+    const processedPresses = match.presses.map(press => {
+      // Find which hole this press started on
+      const pressHole = match.holes.find(h => h.number - 1 === press.holeIndex);
+      const holeStarted = pressHole?.number || 1;
+      
+      // Create a temporary array with just this one press
+      const singlePressHoles = holesWithPresses.map(hole => ({
+        ...hole,
+        // Only include this specific press in the hole's presses
+        presses: hole.number === holeStarted ? [press] : []
+      }));
+      
+      // Calculate results for just this press
+      const results = calculatePressResults(teams, singlePressHoles, match.playFormat);
+      return results.length > 0 ? results[0] : null;
+    }).filter(Boolean); // Remove any null results
     
     const getBetAmount = (pressType: string): number => {
       const gameFormat = match.gameFormats.find(format => {
@@ -153,7 +170,9 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       total18: [],
     };
     
-    pressResults.forEach(press => {
+    processedPresses.forEach(press => {
+      if (!press) return;
+      
       const fromTeam = match.teams.find(team => team.id === press.fromTeamId);
       const toTeam = match.teams.find(team => team.id === press.toTeamId);
       
