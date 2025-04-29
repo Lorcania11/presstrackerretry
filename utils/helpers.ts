@@ -249,88 +249,175 @@ export const calculateHoleResult = (hole: Hole, teams: MatchTeam[], playFormat: 
   }
 };
 
-export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFormat: "match" | "stroke"): PressResult[] => {
+export const calculatePressResults = (teams: any[], holes: any[], playFormat: "match" | "stroke"): any[] => {
   // Only calculate between 2 teams
-  if (teams.length !== 2) return [];
+  if (teams.length !== 2 || !holes || !holes.length) return [];
   
   const team1 = teams[0];
   const team2 = teams[1];
   
-  const presses = holes.flatMap((hole: Hole) => 
-    hole.presses.map((press: Press) => ({
+  // Extract all presses from holes
+  const presses = holes.flatMap(hole => 
+    (hole.presses || []).map(press => ({
       ...press,
       holeStarted: hole.number,
     }))
   );
   
-  return presses.map((press: Press) => {
+  if (!presses.length) return [];
+  
+  return presses.map(press => {
     // Ensure holeStarted is defined with a safe default value if undefined
     const holeStarted = press.holeStarted || 1;
     
+    // Filter for relevant holes - only look at holes from where the press started
     const relevantHoles = holes.filter(
-      (hole: Hole) => hole.number >= holeStarted && hole.isComplete
+      hole => hole.number >= holeStarted && hole.isComplete
     );
+    
+    // Get the press type to determine range of holes to consider
+    const pressType = press.pressType;
+    let lastHole = 18;
+    
+    if (pressType === 'front9') {
+      lastHole = 9;
+    } else if (pressType === 'back9') {
+      lastHole = 18;
+    }
+    
+    // Filter holes further to include only those within the press type range
+    const pressHoles = relevantHoles.filter(hole => {
+      if (pressType === 'front9') return hole.number <= 9;
+      if (pressType === 'back9') return hole.number >= 10 && hole.number <= 18;
+      return true; // total18 - all holes apply
+    });
     
     if (playFormat === 'match') {
       let team1Wins = 0;
       let team2Wins = 0;
+      let halvedHoles = 0;
+      let completedHoles = 0;
       
-      relevantHoles.forEach((hole: Hole) => {
-        const team1ScoreObj = hole.scores.find((s: HoleScore) => s.teamId === team1.id);
-        const team2ScoreObj = hole.scores.find((s: HoleScore) => s.teamId === team2.id);
-        const team1Score = team1ScoreObj?.score;
-        const team2Score = team2ScoreObj?.score;
+      pressHoles.forEach(hole => {
+        const team1Score = hole.scores.find(s => s.teamId === team1.id)?.score;
+        const team2Score = hole.scores.find(s => s.teamId === team2.id)?.score;
         
+        // Only count holes where both teams have entered a score
         if (team1Score !== null && team1Score !== undefined && 
             team2Score !== null && team2Score !== undefined) {
-          if (team1Score < team2Score) team1Wins++;
-          else if (team2Score < team1Score) team2Wins++;
+          completedHoles++;
+          if (team1Score < team2Score) {
+            team1Wins++;
+          } else if (team2Score < team1Score) {
+            team2Wins++;
+          } else {
+            halvedHoles++;
+          }
         }
       });
       
-      let status, winner;
+      // If no completed holes, return early with a pending status
+      if (completedHoles === 0) {
+        return {
+          ...press,
+          status: 'No holes completed',
+          winner: null,
+        };
+      }
+      
+      // Calculate max possible holes based on press type
+      const maxPossibleHoles = (pressType === 'front9' ? 9 : (pressType === 'back9' ? 9 : 18));
+      const holesRemaining = maxPossibleHoles - completedHoles;
       const difference = team1Wins - team2Wins;
       
-      if (difference > 0) {
-        status = `${team1.name} wins ${team1Wins} to ${team2Wins}`;
-        winner = team1.id;
-      } else if (difference < 0) {
-        status = `${team2.name} wins ${team2Wins} to ${team1Wins}`;
-        winner = team2.id;
+      // Determine if the press match is mathematically over
+      const isMatchOver = Math.abs(difference) > holesRemaining;
+      
+      let status = '';
+      let winner = null;
+      
+      if (isMatchOver) {
+        if (difference > 0) {
+          status = `${team1.name} wins ${difference} & ${holesRemaining}`;
+          winner = team1.id;
+        } else {
+          status = `${team2.name} wins ${-difference} & ${holesRemaining}`;
+          winner = team2.id;
+        }
+      } else if (holesRemaining === 0) {
+        if (difference > 0) {
+          status = `${team1.name} wins ${difference} UP`;
+          winner = team1.id;
+        } else if (difference < 0) {
+          status = `${team2.name} wins ${-difference} UP`;
+          winner = team2.id;
+        } else {
+          status = 'Press Halved';
+        }
       } else {
-        status = 'Press is tied';
-        winner = null;
+        if (difference > 0) {
+          status = `${team1.name} ${difference} UP through ${completedHoles}`;
+        } else if (difference < 0) {
+          status = `${team2.name} ${-difference} UP through ${completedHoles}`;
+        } else {
+          status = `All Square through ${completedHoles}`;
+        }
       }
       
       return {
         ...press,
         status,
         winner,
-        amount: press.amount
       };
       
     } else {
       // For stroke play, compare total strokes
-      const team1Total = relevantHoles.reduce((total: number, hole: Hole) => {
-        const score = hole.scores.find((s: HoleScore) => s.teamId === team1.id)?.score || 0;
-        return total + score;
-      }, 0);
+      let team1Total = 0;
+      let team2Total = 0;
+      let completedHoles = 0;
       
-      const team2Total = relevantHoles.reduce((total: number, hole: Hole) => {
-        const score = hole.scores.find((s: HoleScore) => s.teamId === team2.id)?.score || 0;
-        return total + score;
-      }, 0);
+      pressHoles.forEach(hole => {
+        const team1Score = hole.scores.find(s => s.teamId === team1.id)?.score;
+        const team2Score = hole.scores.find(s => s.teamId === team2.id)?.score;
+        
+        // Only count holes where both teams have entered a score
+        if (team1Score !== null && team1Score !== undefined && 
+            team2Score !== null && team2Score !== undefined) {
+          team1Total += team1Score;
+          team2Total += team2Score;
+          completedHoles++;
+        }
+      });
       
-      let status, winner;
+      // If no completed holes, return early with a pending status
+      if (completedHoles === 0) {
+        return {
+          ...press,
+          status: 'No holes completed',
+          winner: null,
+        };
+      }
+      
+      const maxPossibleHoles = (pressType === 'front9' ? 9 : (pressType === 'back9' ? 9 : 18));
+      const isComplete = completedHoles === maxPossibleHoles;
+      
+      let status = '';
+      let winner = null;
       
       if (team1Total < team2Total) {
-        status = `${team1.name} wins by ${team2Total - team1Total}`;
-        winner = team1.id;
+        const diff = team2Total - team1Total;
+        status = isComplete 
+          ? `${team1.name} wins by ${diff}`
+          : `${team1.name} leads by ${diff} through ${completedHoles}`;
+        winner = isComplete ? team1.id : null;
       } else if (team2Total < team1Total) {
-        status = `${team2.name} wins by ${team1Total - team2Total}`;
-        winner = team2.id;
+        const diff = team1Total - team2Total;
+        status = isComplete 
+          ? `${team2.name} wins by ${diff}`
+          : `${team2.name} leads by ${diff} through ${completedHoles}`;
+        winner = isComplete ? team2.id : null;
       } else {
-        status = 'Press is tied';
+        status = isComplete ? 'Press is tied' : `Tied through ${completedHoles}`;
         winner = null;
       }
       
@@ -338,8 +425,21 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
         ...press,
         status,
         winner,
-        amount: press.amount
       };
     }
   });
+};
+
+// Helper to get the proper press amount
+const getPressAmount = (pressType: string, teams: any[]): number => {
+  // Default values if not found
+  const defaultAmounts = {
+    'front9': 10,
+    'back9': 10, 
+    'total18': 10
+  };
+  
+  // Note: In a full implementation, you'd retrieve this from the match's gameFormats
+  // This is just a placeholder implementation
+  return defaultAmounts[pressType as keyof typeof defaultAmounts] || 10;
 };

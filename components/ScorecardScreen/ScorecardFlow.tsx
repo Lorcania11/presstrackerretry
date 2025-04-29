@@ -10,9 +10,10 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react-native';
 import PressNotification from './PressNotification';
 import PressIndicator from './PressIndicator';
+import PressSummaryModal from '@/components/match/PressSummaryModal';
 
 // Define fixed team colors (important for consistent team identification)
 const FIXED_TEAM_COLORS: Record<string, string> = {
@@ -50,6 +51,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
   matchId
 }) => {
   const [showingBack9, setShowingBack9] = useState(showBack9);
+  const [showPressSummary, setShowPressSummary] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const { width } = Dimensions.get('window');
   
@@ -99,6 +101,33 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     };
   });
 
+  // Create a mock match object for the press summary modal
+  const mockMatch = {
+    id: matchId,
+    title: 'Match Summary',
+    teams: teamsWithFixedColors.map(team => ({
+      id: team.id,
+      name: team.name,
+      initial: team.initial,
+      color: team.fixedColor,
+    })),
+    presses: presses,
+    holes: Array(18).fill(0).map((_, i) => ({
+      number: i + 1,
+      scores: teamsWithFixedColors.map(team => ({
+        teamId: team.id,
+        score: team.scores[i],
+      })),
+      isComplete: team.scores[i] !== null,
+    })),
+    playFormat: 'match', // Default to match play, would need to be passed from parent
+    gameFormats: [
+      { type: 'front', betAmount: 10 },
+      { type: 'back', betAmount: 10 },
+      { type: 'total', betAmount: 10 },
+    ],
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -106,7 +135,14 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
           <ArrowLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Scorecard</Text>
-        <View style={styles.headerRight} />
+        {presses.length > 0 && (
+          <TouchableOpacity 
+            style={styles.pressButton}
+            onPress={() => setShowPressSummary(true)}
+          >
+            <DollarSign size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
       </View>
       
       <View style={styles.toggleContainer}>
@@ -253,6 +289,15 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         showBack9={showingBack9}
         teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor }))}
       />
+
+      {showPressSummary && (
+        <PressSummaryModal
+          isVisible={showPressSummary}
+          onClose={() => setShowPressSummary(false)}
+          match={mockMatch}
+          teamColors={FIXED_TEAM_COLORS}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -384,6 +429,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  pressButton: {
+    backgroundColor: '#FF9800',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
 });
 

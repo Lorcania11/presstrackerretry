@@ -16,7 +16,8 @@ import { useMatches } from '@/hooks/useMatches';
 import { Match as ContextMatch, Team } from '@/context/MatchContext';
 import StepPressModal from '@/components/match/StepPressModal';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
-import { ChevronLeft, ArrowLeft, ArrowRight } from 'lucide-react-native';
+import PressSummaryModal from '@/components/match/PressSummaryModal';
+import { ChevronLeft, ArrowLeft, ArrowRight, DollarSign } from 'lucide-react-native';
 
 // Define interfaces for type safety
 interface HoleScore {
@@ -80,6 +81,7 @@ export default function MatchDetailScreen() {
   const [scores, setScores] = useState<{[teamId: string]: string}>({});
   const [showBack9, setShowBack9] = useState(false);
   const [currentHoleSaved, setCurrentHoleSaved] = useState<boolean>(false);
+  const [showPressSummary, setShowPressSummary] = useState(false);
 
   // Map to keep track of team IDs to fixed colors
   const [teamFixedColors, setTeamFixedColors] = useState<{[teamId: string]: string}>({});
@@ -290,6 +292,10 @@ export default function MatchDetailScreen() {
     setShowScorecardFlow(true);
   };
 
+  const handleOpenPressSummary = () => {
+    setShowPressSummary(true);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -338,9 +344,19 @@ export default function MatchDetailScreen() {
           <ChevronLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{match.title}</Text>
-        <TouchableOpacity style={styles.scorecardButton} onPress={handleOpenScorecard}>
-          <Text style={styles.scorecardButtonText}>View Scorecard</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          {match.enablePresses && match.presses.length > 0 && (
+            <TouchableOpacity 
+              style={styles.pressButton} 
+              onPress={handleOpenPressSummary}
+            >
+              <DollarSign size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.scorecardButton} onPress={handleOpenScorecard}>
+            <Text style={styles.scorecardButtonText}>View Scorecard</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.scoreInputContainer}>
@@ -432,6 +448,20 @@ export default function MatchDetailScreen() {
         </View>
       )}
 
+      {showPressSummary && match && (
+        <PressSummaryModal
+          isVisible={showPressSummary}
+          onClose={() => setShowPressSummary(false)}
+          match={{
+            ...match,
+            // Ensure the match object has the latest data
+            presses: [...match.presses], // Create a new array to trigger useEffect
+            holes: match.holes.map(hole => ({...hole})) // Create new objects to trigger useEffect
+          }}
+          teamColors={FIXED_TEAM_COLORS}
+        />
+      )}
+
       {showPressModal && match && currentHole && (
         <StepPressModal
           isVisible={showPressModal}
@@ -477,6 +507,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pressButton: {
+    backgroundColor: '#FF9800',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   scorecardButton: {
     backgroundColor: '#007AFF',
