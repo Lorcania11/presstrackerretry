@@ -33,6 +33,7 @@ interface GameType {
   name: string;
   amount: string;
   selected: boolean;
+  isAvailable?: boolean; // New property to track availability
 }
 
 interface StepPressModalProps {
@@ -75,19 +76,30 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   const mapGameFormatsToTypes = () => {
     if (gameFormats.length === 0) return defaultGameTypes;
 
+    // Filter game types based on current hole
     return gameFormats.map(format => {
       let name = 'Unknown';
       let id = format.type;
+      let isAvailable = true;
 
       if (format.type === 'front') {
         name = 'Front 9';
         id = 'front9';
+        // Only available on holes 1-9
+        isAvailable = hole.number >= 1 && hole.number <= 9;
       } else if (format.type === 'back') {
         name = 'Back 9';
-        id = 'back9'; 
+        id = 'back9';
+        // Only available on holes 10-18
+        isAvailable = hole.number >= 10 && hole.number <= 18;
       } else if (format.type === 'total') {
         name = 'Total 18';
         id = 'total18';
+        // For total, allow pressing on any hole
+        // But logically restrict pressing on the front 9 holes (1-9)
+        // or the back 9 holes (10-18)
+        isAvailable = (hole.number >= 1 && hole.number <= 9) || 
+                      (hole.number >= 10 && hole.number <= 18);
       } else if (format.label) {
         name = format.label;
       }
@@ -96,9 +108,10 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         id,
         name,
         amount: `$${format.betAmount}`,
-        selected: false
+        selected: false,
+        isAvailable // New property to track availability
       };
-    });
+    }).filter(gameType => gameType.isAvailable); // Filter out unavailable game types
   };
 
   const [gameTypes, setGameTypes] = useState<GameType[]>(mapGameFormatsToTypes());
@@ -334,25 +347,29 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
 
         <Text style={styles.selectGameTypesTitle}>Select Game Types</Text>
 
-        <View style={styles.gameTypesContainer}>
-          {gameTypes.map((gameType) => (
-            <TouchableOpacity
-              key={gameType.id}
-              style={styles.gameTypeRow}
-              onPress={() => toggleGameType(gameType.id)}
-            >
-              <View style={styles.gameTypeInfo}>
-                <Text style={styles.gameTypeName}>{gameType.name}</Text>
-                <Text style={styles.gameTypeAmount}>{gameType.amount}</Text>
-              </View>
+        {gameTypes.length === 0 ? (
+          <Text style={styles.noGameTypesText}>No available press types for hole {hole.number}</Text>
+        ) : (
+          <View style={styles.gameTypesContainer}>
+            {gameTypes.map((gameType) => (
+              <TouchableOpacity
+                key={gameType.id}
+                style={styles.gameTypeRow}
+                onPress={() => toggleGameType(gameType.id)}
+              >
+                <View style={styles.gameTypeInfo}>
+                  <Text style={styles.gameTypeName}>{gameType.name}</Text>
+                  <Text style={styles.gameTypeAmount}>{gameType.amount}</Text>
+                </View>
 
-              <View style={[
-                styles.toggleButton,
-                gameType.selected && styles.toggleButtonSelected
-              ]} />
-            </TouchableOpacity>
-          ))}
-        </View>
+                <View style={[
+                  styles.toggleButton,
+                  gameType.selected && styles.toggleButtonSelected
+                ]} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     );
   };
@@ -591,6 +608,13 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 16,
+  },
+  noGameTypesText: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 20,
+    marginBottom: 20,
+    fontStyle: 'italic',
   }
 });
 

@@ -9,7 +9,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { X, ChevronDown, ChevronUp, DollarSign } from 'lucide-react-native';
-import { calculatePressResults } from '@/utils/helpers';
+import { calculatePressResults, formatGameType } from '@/utils/helpers';
 
 interface PressSummaryModalProps {
   isVisible: boolean;
@@ -198,6 +198,22 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
     const isComplete = press.status.includes('wins');
     const statusColor = isComplete ? '#4CAF50' : '#FF9800';
     
+    // Determine the hole range for this press
+    const getPressRange = (pressType: string, holeNumber: number): string => {
+      if (pressType === 'front9') {
+        return `Holes ${holeNumber}-9`;
+      } else if (pressType === 'back9') {
+        return `Holes ${holeNumber}-18`;
+      } else if (pressType === 'total18') {
+        if (holeNumber >= 1 && holeNumber <= 9) {
+          return `Holes ${holeNumber}-18 (Total)`;
+        } else {
+          return `Holes ${holeNumber}-18 (Back 9)`;
+        }
+      }
+      return `Started hole ${holeNumber}`;
+    };
+    
     return (
       <View key={press.id} style={styles.pressItem}>
         <View style={styles.pressHeader}>
@@ -217,7 +233,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
         
         <View style={styles.pressDetails}>
           <Text style={styles.pressStarted}>
-            Started hole {press.holeNumber}
+            {getPressRange(press.pressType, press.holeNumber)}
           </Text>
           <Text style={[styles.pressStatus, { color: statusColor }]}>
             {press.status}

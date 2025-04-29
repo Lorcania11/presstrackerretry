@@ -277,21 +277,33 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
     
     // Get the press type to determine range of holes to consider
     const pressType = press.pressType;
-    let lastHole = 18;
+    let minHole = 1;
+    let maxHole = 18;
     
+    // Set min and max hole numbers based on press type
     if (pressType === 'front9') {
-      lastHole = 9;
+      minHole = 1;
+      maxHole = 9;
     } else if (pressType === 'back9') {
-      lastHole = 18;
+      minHole = 10;
+      maxHole = 18;
+    } else if (pressType === 'total18') {
+      // For total press, consider if it started on front 9 or back 9
+      if (holeStarted >= 1 && holeStarted <= 9) {
+        minHole = holeStarted;  // Start from the hole where the press was made
+        maxHole = 18;  // End at hole 18
+      } else if (holeStarted >= 10 && holeStarted <= 18) {
+        minHole = holeStarted;  // Start from the hole where the press was made
+        maxHole = 18;  // End at hole 18
+      }
     }
     
     // Filter holes further to include only those within the press type range
-    const pressHoles = relevantHoles.filter(hole => {
-      if (pressType === 'front9') return hole.number <= 9;
-      if (pressType === 'back9') return hole.number >= 10 && hole.number <= 18;
-      return true; // total18 - all holes apply
-    });
+    const pressHoles = relevantHoles.filter(hole => 
+      hole.number >= minHole && hole.number <= maxHole
+    );
     
+    // Rest of the calculation logic remains the same
     if (playFormat === 'match') {
       let team1Wins = 0;
       let team2Wins = 0;
