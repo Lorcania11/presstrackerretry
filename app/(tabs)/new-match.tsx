@@ -129,15 +129,28 @@ export default function NewMatchScreen() {
       processedGameFormats.forEach(format => {
         // Create the starting bet for each game type
         // First team is always pressing, second team is always being pressed
-        const pressType = format.type === 'front' ? 'front9' : 
-                          format.type === 'back' ? 'back9' : 
-                          format.type === 'total' ? 'total18' : format.type;
+        let pressType;
+        let holeIndex;
+        
+        if (format.type === 'front') {
+          pressType = 'front9';
+          holeIndex = 0; // Front 9 starts at hole 1 (0-indexed)
+        } else if (format.type === 'back') {
+          pressType = 'back9';
+          holeIndex = 9; // Back 9 starts at hole 10 (0-indexed)
+        } else if (format.type === 'total') {
+          pressType = 'total18';
+          holeIndex = 0; // Total 18 starts at hole 1 (0-indexed)
+        } else {
+          pressType = format.type;
+          holeIndex = 0;
+        }
         
         initialPresses.push({
           id: Math.random().toString(36).substring(2, 9),
           fromTeamId: initializedTeams[0].id,
           toTeamId: initializedTeams[1].id,
-          holeIndex: 0, // This starts at hole 1 (0-indexed)
+          holeIndex, // Use the appropriate starting hole index
           pressType,
           isOriginalBet: true, // Flag to identify original bets
         });

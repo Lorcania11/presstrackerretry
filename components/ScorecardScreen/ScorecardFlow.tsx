@@ -129,10 +129,11 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     ],
   };
 
-  // Identify and flag original bets (those that start on hole 1)
+  // Identify and flag original bets correctly based on their hole indices
   const pressesWithOriginalBets = presses.map(press => {
-    // Assume presses that start on hole 1 (holeIndex 0) are original bets
-    if (press.holeIndex === 0) {
+    // Check both hole index and press type to determine if it's an original bet
+    if ((press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
+        (press.holeIndex === 9 && press.pressType === 'back9')) {
       return {
         ...press,
         isOriginalBet: true

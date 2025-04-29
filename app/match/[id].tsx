@@ -454,11 +454,13 @@ export default function MatchDetailScreen() {
           onClose={() => setShowPressSummary(false)}
           match={{
             ...match,
-            // Ensure the match object has the latest data
+            // Ensure the match object has the latest data with correctly flagged original bets
             presses: match.presses.map(press => ({
               ...press,
-              // Original bets start on hole 1 (holeIndex 0)
-              isOriginalBet: press.holeIndex === 0 
+              // Original bets start on hole 1 (holeIndex 0) for front9 and total18,
+              // or on hole 10 (holeIndex 9) for back9
+              isOriginalBet: (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
+                             (press.holeIndex === 9 && press.pressType === 'back9')
             })),
             holes: match.holes.map(hole => ({
               ...hole,

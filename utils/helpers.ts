@@ -272,15 +272,21 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
   
   return allPresses.map((press: Press) => {
     // Ensure holeStarted is defined with a safe default value if undefined
-    const holeStarted = press.holeStarted || 1;
+    const holeStarted = press.holeStarted || (press.pressType === 'back9' ? 10 : 1);
     
     // Set min and max hole numbers based on press type
     let minHole = holeStarted; // Always start from where the press was made
     let maxHole = 18;
     
-    // Special handling for original bets that always start from hole 1
+    // Special handling for original bets
     if (press.isOriginalBet) {
-      minHole = 1;
+      if (press.pressType === 'front9') {
+        minHole = 1; // Front 9 original bet always starts at hole 1
+      } else if (press.pressType === 'back9') {
+        minHole = 10; // Back 9 original bet always starts at hole 10
+      } else if (press.pressType === 'total18') {
+        minHole = 1; // Total 18 original bet always starts at hole 1
+      }
     }
     
     if (press.pressType === 'front9') {
@@ -290,7 +296,7 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
       if (minHole > 9) minHole = 9;
     } else if (press.pressType === 'back9') {
       // Back 9 press - start at hole 10 (or press start) and end at 18
-      minHole = Math.max(10, holeStarted);
+      minHole = Math.max(10, minHole);
       maxHole = 18;
     }
     // total18 press uses defaults (start at press hole, end at 18)

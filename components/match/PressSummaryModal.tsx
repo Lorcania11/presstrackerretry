@@ -235,11 +235,11 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       
       if (isOriginalBet) {
         if (pressType === 'front9') {
-          return 'Original Bet: Front 9';
+          return 'Original Bet: Front 9 (Holes 1-9)';
         } else if (pressType === 'back9') {
-          return 'Original Bet: Back 9';
+          return 'Original Bet: Back 9 (Holes 10-18)';
         } else if (pressType === 'total18') {
-          return 'Original Bet: Total Game';
+          return 'Original Bet: Total Game (Holes 1-18)';
         }
       }
       
@@ -248,7 +248,12 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       } else if (pressType === 'back9') {
         return `Press: Holes ${holeNumber}-18`;
       } else if (pressType === 'total18') {
-        return `Press: Holes ${holeNumber}-18`;
+        // Differentiate between presses on front 9 and back 9
+        if (holeNumber >= 1 && holeNumber <= 9) {
+          return `Press: Holes ${holeNumber}-18 (Total)`;
+        } else {
+          return `Press: Holes ${holeNumber}-18 (Back 9)`;
+        }
       }
       
       return `Started hole ${holeNumber}`;
