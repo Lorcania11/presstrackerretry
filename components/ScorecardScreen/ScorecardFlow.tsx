@@ -118,9 +118,9 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         teamId: team.id,
         score: team.scores[i],
       })),
-      isComplete: team.scores[i] !== null,
+      isComplete: teams.some(team => team.scores[i] !== null), // Fix: Changed 'team' to 'teams'
     })),
-    playFormat: 'match', // Default to match play, would need to be passed from parent
+    playFormat: 'match' as const, // Fix: Added 'as const' to ensure type is literally "match"
     gameFormats: [
       { type: 'front', betAmount: 10 },
       { type: 'back', betAmount: 10 },

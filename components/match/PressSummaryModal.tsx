@@ -118,6 +118,12 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       })
     }));
     
+    // Add 'presses' property to holes to match the expected Hole type
+    const holesWithPresses = match.holes.map(hole => ({
+      ...hole,
+      presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
+    }));
+    
     const hasCompletedHoles = match.holes.some(hole => hole.isComplete);
     
     if (!hasCompletedHoles) {
@@ -129,7 +135,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       return;
     }
     
-    const pressResults = calculatePressResults(teams, match.holes, match.playFormat);
+    const pressResults = calculatePressResults(teams, holesWithPresses, match.playFormat);
     
     const getBetAmount = (pressType: string): number => {
       const gameFormat = match.gameFormats.find(format => {

@@ -249,7 +249,7 @@ export const calculateHoleResult = (hole: Hole, teams: MatchTeam[], playFormat: 
   }
 };
 
-export const calculatePressResults = (teams: any[], holes: any[], playFormat: "match" | "stroke"): any[] => {
+export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFormat: "match" | "stroke"): PressResult[] => {
   // Only calculate between 2 teams
   if (teams.length !== 2 || !holes || !holes.length) return [];
   
@@ -258,7 +258,7 @@ export const calculatePressResults = (teams: any[], holes: any[], playFormat: "m
   
   // Extract all presses from holes
   const presses = holes.flatMap(hole => 
-    (hole.presses || []).map(press => ({
+    (hole.presses || []).map((press: Press) => ({
       ...press,
       holeStarted: hole.number,
     }))
@@ -266,7 +266,7 @@ export const calculatePressResults = (teams: any[], holes: any[], playFormat: "m
   
   if (!presses.length) return [];
   
-  return presses.map(press => {
+  return presses.map((press: Press) => {
     // Ensure holeStarted is defined with a safe default value if undefined
     const holeStarted = press.holeStarted || 1;
     
@@ -298,9 +298,9 @@ export const calculatePressResults = (teams: any[], holes: any[], playFormat: "m
       let halvedHoles = 0;
       let completedHoles = 0;
       
-      pressHoles.forEach(hole => {
-        const team1Score = hole.scores.find(s => s.teamId === team1.id)?.score;
-        const team2Score = hole.scores.find(s => s.teamId === team2.id)?.score;
+      pressHoles.forEach((hole: Hole) => {
+        const team1Score = hole.scores.find((s: HoleScore) => s.teamId === team1.id)?.score;
+        const team2Score = hole.scores.find((s: HoleScore) => s.teamId === team2.id)?.score;
         
         // Only count holes where both teams have entered a score
         if (team1Score !== null && team1Score !== undefined && 
@@ -376,9 +376,9 @@ export const calculatePressResults = (teams: any[], holes: any[], playFormat: "m
       let team2Total = 0;
       let completedHoles = 0;
       
-      pressHoles.forEach(hole => {
-        const team1Score = hole.scores.find(s => s.teamId === team1.id)?.score;
-        const team2Score = hole.scores.find(s => s.teamId === team2.id)?.score;
+      pressHoles.forEach((hole: Hole) => {
+        const team1Score = hole.scores.find((s: HoleScore) => s.teamId === team1.id)?.score;
+        const team2Score = hole.scores.find((s: HoleScore) => s.teamId === team2.id)?.score;
         
         // Only count holes where both teams have entered a score
         if (team1Score !== null && team1Score !== undefined && 
@@ -431,7 +431,7 @@ export const calculatePressResults = (teams: any[], holes: any[], playFormat: "m
 };
 
 // Helper to get the proper press amount
-const getPressAmount = (pressType: string, teams: any[]): number => {
+const getPressAmount = (pressType: string, teams: MatchTeam[]): number => {
   // Default values if not found
   const defaultAmounts = {
     'front9': 10,
