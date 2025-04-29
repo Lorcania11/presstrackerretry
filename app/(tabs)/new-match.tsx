@@ -16,6 +16,16 @@ import { useMatches } from '@/hooks/useMatches';
 import { ChevronDown, ChevronUp, Users, DollarSign, Flag, X } from 'lucide-react-native';
 import { useMatchContext, Team } from '@/context/MatchContext';
 
+// Define interface for press objects
+interface Press {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  holeIndex: number;
+  pressType: string;
+  isOriginalBet?: boolean;
+}
+
 interface GameFormat {
   id: string;
   type: 'front' | 'back' | 'total';
@@ -123,7 +133,7 @@ export default function NewMatchScreen() {
     }));
 
     // Create initial presses for each enabled game type (starting bets)
-    const initialPresses = [];
+    const initialPresses: Press[] = [];
     
     if (enablePresses && initializedTeams.length === 2) {
       processedGameFormats.forEach(format => {
