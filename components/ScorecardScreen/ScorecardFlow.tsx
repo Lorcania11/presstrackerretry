@@ -121,7 +121,6 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       isComplete: teams.some(team => team.scores[i] !== null),
       presses: [] // Add empty presses array to match Hole interface
     })),
-    // Force the playFormat to be 'match' since that's what we're calculating
     playFormat: 'match' as const,
     gameFormats: [
       { type: 'front', betAmount: 10 },
@@ -129,6 +128,18 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       { type: 'total', betAmount: 10 },
     ],
   };
+
+  // Identify and flag original bets (those that start on hole 1)
+  const pressesWithOriginalBets = presses.map(press => {
+    // Assume presses that start on hole 1 (holeIndex 0) are original bets
+    if (press.holeIndex === 0) {
+      return {
+        ...press,
+        isOriginalBet: true
+      };
+    }
+    return press;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -298,8 +309,8 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
           onClose={() => setShowPressSummary(false)}
           match={{
             ...mockMatch,
-            // Ensure presses and holes are treated as new objects to trigger recalculation
-            presses: [...presses],
+            // Use the presses with marked original bets
+            presses: pressesWithOriginalBets,
             holes: mockMatch.holes.map(hole => ({...hole}))
           }}
           teamColors={FIXED_TEAM_COLORS}

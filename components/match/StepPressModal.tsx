@@ -347,6 +347,10 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         </View>
 
         <Text style={styles.selectGameTypesTitle}>Select Game Types</Text>
+        
+        <Text style={styles.pressInfoText}>
+          Press when a team is losing to extend the bet and attempt to recover
+        </Text>
 
         {gameTypes.length === 0 ? (
           <Text style={styles.noGameTypesText}>No available press types for hole {hole.number}</Text>
@@ -616,6 +620,13 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
     fontStyle: 'italic',
+  },
+  pressInfoText: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 15,
+    fontStyle: 'italic',
+    textAlign: 'center',
   }
 });
 

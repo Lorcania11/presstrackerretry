@@ -116,15 +116,40 @@ export default function NewMatchScreen() {
 
     setTeams(initializedTeams as Team[]); // Update teams in MatchContext with proper casting
 
+    // Convert enabled game formats to the array format needed for match
+    const processedGameFormats = enabledFormats.map(format => ({
+      type: format.type,
+      betAmount: parseFloat(format.betAmount) || 0,
+    }));
+
+    // Create initial presses for each enabled game type (starting bets)
+    const initialPresses = [];
+    
+    if (enablePresses && initializedTeams.length === 2) {
+      processedGameFormats.forEach(format => {
+        // Create the starting bet for each game type
+        // First team is always pressing, second team is always being pressed
+        const pressType = format.type === 'front' ? 'front9' : 
+                          format.type === 'back' ? 'back9' : 
+                          format.type === 'total' ? 'total18' : format.type;
+        
+        initialPresses.push({
+          id: Math.random().toString(36).substring(2, 9),
+          fromTeamId: initializedTeams[0].id,
+          toTeamId: initializedTeams[1].id,
+          holeIndex: 0, // This starts at hole 1 (0-indexed)
+          pressType,
+          isOriginalBet: true, // Flag to identify original bets
+        });
+      });
+    }
+
     const newMatch = {
       id: generateUniqueId(),
       title: title || `Match ${new Date().toLocaleDateString()}`,
       teams: initializedTeams,
-      presses: [], // Add empty presses array to match the Match interface
-      gameFormats: enabledFormats.map(format => ({
-        type: format.type,
-        betAmount: parseFloat(format.betAmount) || 0,
-      })),
+      presses: initialPresses, // Add initial presses to match data
+      gameFormats: processedGameFormats,
       playFormat,
       enablePresses,
       holes: Array(18).fill(null).map((_, i) => ({

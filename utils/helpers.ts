@@ -20,6 +20,7 @@ interface Press {
   pressType: string;
   holeStarted?: number;
   amount?: number;
+  isOriginalBet?: boolean; // Add this field to track original bets
 }
 
 interface Hole {
@@ -264,15 +265,23 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
     }))
   );
   
-  if (!presses.length) return [];
+  // Add presses from the match-level presses array (for original bets)
+  const allPresses = [...presses];
   
-  return presses.map((press: Press) => {
+  if (!allPresses.length) return [];
+  
+  return allPresses.map((press: Press) => {
     // Ensure holeStarted is defined with a safe default value if undefined
     const holeStarted = press.holeStarted || 1;
     
     // Set min and max hole numbers based on press type
     let minHole = holeStarted; // Always start from where the press was made
     let maxHole = 18;
+    
+    // Special handling for original bets that always start from hole 1
+    if (press.isOriginalBet) {
+      minHole = 1;
+    }
     
     if (press.pressType === 'front9') {
       // Front 9 press - end at hole 9
@@ -337,6 +346,7 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
       let status = '';
       let winner = null;
       
+      // Format the status text differently for original bets versus presses
       if (isMatchOver) {
         if (difference > 0) {
           status = `${team1.name} wins ${difference} & ${holesRemaining}`;
@@ -353,16 +363,27 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
           status = `${team2.name} wins ${-difference} UP`;
           winner = team2.id;
         } else {
-          status = 'Press Halved';
+          status = 'Match Halved';
         }
       } else {
+        // For in-progress matches, use a more descriptive status
+        // indicating the match state using "UP", "DOWN", or "AS" (All Square)
         if (difference > 0) {
-          // Use consistent language: always "up" not "leads by"
-          status = `${team1.name} ${difference} UP through ${completedHoles}`;
+          if (press.isOriginalBet) {
+            status = `${team1.name} ${difference} UP through ${completedHoles}`;
+          } else {
+            status = `Press: ${team1.name} ${difference} UP through ${completedHoles}`;
+          }
         } else if (difference < 0) {
-          status = `${team2.name} ${-difference} UP through ${completedHoles}`;
+          if (press.isOriginalBet) {
+            status = `${team2.name} ${-difference} UP through ${completedHoles}`;
+          } else {
+            status = `Press: ${team2.name} ${-difference} UP through ${completedHoles}`;
+          }
         } else {
-          status = `All Square through ${completedHoles}`;
+          status = press.isOriginalBet ? 
+            `All Square through ${completedHoles}` : 
+            `Press: All Square through ${completedHoles}`;
         }
       }
       

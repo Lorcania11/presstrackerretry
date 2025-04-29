@@ -29,6 +29,7 @@ interface PressSummaryModalProps {
       toTeamId: string;
       holeIndex: number;
       pressType: string;
+      isOriginalBet?: boolean;
     }>;
     holes: Array<{
       number: number;
@@ -61,6 +62,7 @@ interface PressWithResults {
   winner: string | null;
   amount: number;
   holeNumber: number;
+  isOriginalBet?: boolean;
 }
 
 interface GroupedPresses {
@@ -185,6 +187,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
         toTeamColor: teamColors[(match.teams.findIndex(t => t.id === toTeam.id) + 1).toString()] || toTeam.color || '#CCCCCC',
         amount: getBetAmount(press.pressType),
         holeNumber: press.holeIndex + 1,
+        isOriginalBet: press.isOriginalBet,
       };
       
       if (press.pressType === 'front9') {
@@ -194,6 +197,16 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       } else if (press.pressType === 'total18') {
         groupedResults.total18.push(pressWithDetails);
       }
+    });
+    
+    // Sort presses so original bets come first, then by hole number
+    Object.keys(groupedResults).forEach(key => {
+      const groupKey = key as keyof GroupedPresses;
+      groupedResults[groupKey].sort((a, b) => {
+        if (a.isOriginalBet && !b.isOriginalBet) return -1;
+        if (!a.isOriginalBet && b.isOriginalBet) return 1;
+        return a.holeNumber - b.holeNumber;
+      });
     });
     
     setGroupedPresses(groupedResults);
@@ -217,19 +230,35 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
     const statusColor = isComplete ? '#4CAF50' : '#FF9800';
     
     // Determine the hole range for this press
-    const getPressRange = (pressType: string, holeNumber: number): string => {
-      if (pressType === 'front9') {
-        return `Holes ${holeNumber}-9`;
-      } else if (pressType === 'back9') {
-        return `Holes ${holeNumber}-18`;
-      } else if (pressType === 'total18') {
-        return `Holes ${holeNumber}-18 (Total)`;
+    const getPressRange = (press: PressWithResults): string => {
+      const { pressType, holeNumber, isOriginalBet } = press;
+      
+      if (isOriginalBet) {
+        if (pressType === 'front9') {
+          return 'Original Bet: Front 9';
+        } else if (pressType === 'back9') {
+          return 'Original Bet: Back 9';
+        } else if (pressType === 'total18') {
+          return 'Original Bet: Total Game';
+        }
       }
+      
+      if (pressType === 'front9') {
+        return `Press: Holes ${holeNumber}-9`;
+      } else if (pressType === 'back9') {
+        return `Press: Holes ${holeNumber}-18`;
+      } else if (pressType === 'total18') {
+        return `Press: Holes ${holeNumber}-18`;
+      }
+      
       return `Started hole ${holeNumber}`;
     };
     
     return (
-      <View key={press.id} style={styles.pressItem}>
+      <View key={press.id} style={[
+        styles.pressItem, 
+        press.isOriginalBet && styles.originalBetItem
+      ]}>
         <View style={styles.pressHeader}>
           <View style={styles.teamContainer}>
             <View style={[styles.teamIndicator, { backgroundColor: press.fromTeamColor }]} />
@@ -247,7 +276,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
         
         <View style={styles.pressDetails}>
           <Text style={styles.pressStarted}>
-            {getPressRange(press.pressType, press.holeNumber)}
+            {getPressRange(press)}
           </Text>
           <Text style={[styles.pressStatus, { color: statusColor }]}>
             {press.status}
@@ -378,6 +407,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+  },
+  originalBetItem: {
+    backgroundColor: '#F0F8FF', // Light blue background to distinguish original bets
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
   },
   pressHeader: {
     flexDirection: 'row',
