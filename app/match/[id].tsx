@@ -454,9 +454,13 @@ export default function MatchDetailScreen() {
           onClose={() => setShowPressSummary(false)}
           match={{
             ...match,
-            // Ensure the match object has the latest data
-            presses: [...match.presses], // Create a new array to trigger useEffect
-            holes: match.holes.map(hole => ({...hole})) // Create new objects to trigger useEffect
+            // Ensure the match object has the latest data with properly updated properties
+            presses: [...match.presses],
+            holes: match.holes.map(hole => ({
+              ...hole,
+              // Make sure each hole has a presses array
+              presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
+            }))
           }}
           teamColors={FIXED_TEAM_COLORS}
         />

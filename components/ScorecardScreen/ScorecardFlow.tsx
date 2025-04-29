@@ -118,9 +118,11 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         teamId: team.id,
         score: team.scores[i],
       })),
-      isComplete: teams.some(team => team.scores[i] !== null), // Fix: Changed 'team' to 'teams'
+      isComplete: teams.some(team => team.scores[i] !== null),
+      presses: [] // Add empty presses array to match Hole interface
     })),
-    playFormat: 'match' as const, // Fix: Added 'as const' to ensure type is literally "match"
+    // Force the playFormat to be 'match' since that's what we're calculating
+    playFormat: 'match' as const,
     gameFormats: [
       { type: 'front', betAmount: 10 },
       { type: 'back', betAmount: 10 },
@@ -294,7 +296,12 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         <PressSummaryModal
           isVisible={showPressSummary}
           onClose={() => setShowPressSummary(false)}
-          match={mockMatch}
+          match={{
+            ...mockMatch,
+            // Ensure presses and holes are treated as new objects to trigger recalculation
+            presses: [...presses],
+            holes: mockMatch.holes.map(hole => ({...hole}))
+          }}
           teamColors={FIXED_TEAM_COLORS}
         />
       )}

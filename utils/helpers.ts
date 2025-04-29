@@ -357,6 +357,7 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
         }
       } else {
         if (difference > 0) {
+          // Use consistent language: always "up" not "leads by"
           status = `${team1.name} ${difference} UP through ${completedHoles}`;
         } else if (difference < 0) {
           status = `${team2.name} ${-difference} UP through ${completedHoles}`;
@@ -372,11 +373,12 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
       };
       
     } else {
+      // For stroke play, compare total strokes
       let team1Total = 0;
       let team2Total = 0;
       let completedHoles = 0;
       
-      pressHoles.forEach((hole: Hole) => {
+      pressHoles.forEach(hole => {
         const team1Score = hole.scores.find((s: HoleScore) => s.teamId === team1.id)?.score;
         const team2Score = hole.scores.find((s: HoleScore) => s.teamId === team2.id)?.score;
         
@@ -398,26 +400,28 @@ export const calculatePressResults = (teams: MatchTeam[], holes: Hole[], playFor
         };
       }
       
-      const totalPressHoles = maxHole - minHole + 1;
-      const isComplete = completedHoles === totalPressHoles;
+      const maxPossibleHoles = (press.pressType === 'front9' ? 9 : (press.pressType === 'back9' ? 9 : 18));
+      const isComplete = completedHoles === maxPossibleHoles;
       
       let status = '';
       let winner = null;
       
       if (team1Total < team2Total) {
         const diff = team2Total - team1Total;
+        // Standardize terminology to match match play for consistency
         status = isComplete 
           ? `${team1.name} wins by ${diff}`
-          : `${team1.name} leads by ${diff} through ${completedHoles}`;
+          // Use "UP" style for in-progress status to match match play
+          : `${team1.name} ${diff} UP through ${completedHoles}`;
         winner = isComplete ? team1.id : null;
       } else if (team2Total < team1Total) {
         const diff = team1Total - team2Total;
         status = isComplete 
           ? `${team2.name} wins by ${diff}`
-          : `${team2.name} leads by ${diff} through ${completedHoles}`;
+          : `${team2.name} ${diff} UP through ${completedHoles}`;
         winner = isComplete ? team2.id : null;
       } else {
-        status = isComplete ? 'Press is tied' : `Tied through ${completedHoles}`;
+        status = isComplete ? 'Press is tied' : `All Square through ${completedHoles}`;
         winner = null;
       }
       

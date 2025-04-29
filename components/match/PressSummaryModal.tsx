@@ -118,7 +118,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       })
     }));
     
-    // Add 'presses' property to holes to match the expected Hole type
+    // Make sure each hole has a presses array to match the Hole interface
     const holesWithPresses = match.holes.map(hole => ({
       ...hole,
       presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
@@ -135,8 +135,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       return;
     }
     
-    // Make sure we're processing each press individually
-    // This is the key change - ensure we're calculating results for all presses
+    // Process each press individually to ensure all are displayed
     const processedPresses = match.presses.map(press => {
       // Find which hole this press started on
       const pressHole = match.holes.find(h => h.number - 1 === press.holeIndex);
@@ -224,11 +223,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       } else if (pressType === 'back9') {
         return `Holes ${holeNumber}-18`;
       } else if (pressType === 'total18') {
-        if (holeNumber >= 1 && holeNumber <= 9) {
-          return `Holes ${holeNumber}-18 (Total)`;
-        } else {
-          return `Holes ${holeNumber}-18 (Back 9)`;
-        }
+        return `Holes ${holeNumber}-18 (Total)`;
       }
       return `Started hole ${holeNumber}`;
     };
