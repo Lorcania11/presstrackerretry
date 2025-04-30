@@ -8,28 +8,38 @@ interface Press {
   toTeamId: string;
   holeIndex: number;
   pressType: string;
+  isOriginalBet?: boolean; // Add this field to check
 }
 
 interface PressNotificationProps {
   presses: Press[];
   matchId: string;
-  showBack9?: boolean;
-  teams?: Array<{
+  showBack9: boolean;
+  teams: Array<{
     id: string;
     color: string;
   }>;
 }
 
-const PressNotification: React.FC<PressNotificationProps> = ({ 
-  presses, 
+const PressNotification: React.FC<PressNotificationProps> = ({
+  presses,
   matchId,
-  showBack9 = false,
-  teams = [] 
+  showBack9,
+  teams
 }) => {
-  // Filter presses based on front 9 or back 9
+  // Only show notifications for non-original bet presses
   const filteredPresses = presses.filter(press => {
-    const holeIndex = press.holeIndex;
-    return showBack9 ? holeIndex >= 9 && holeIndex < 18 : holeIndex < 9;
+    // Skip original bets for notification display
+    if (press.isOriginalBet) return false;
+    
+    // Only show presses for the current 9 holes being viewed
+    const pressHole = press.holeIndex + 1; // Convert to 1-indexed
+    
+    if (showBack9) {
+      return pressHole >= 10 && pressHole <= 18;
+    } else {
+      return pressHole >= 1 && pressHole <= 9;
+    }
   });
 
   // Define fixed team colors (important for consistent team identification)

@@ -10,11 +10,14 @@ interface PressIndicatorProps {
     toTeamId: string;
     holeIndex: number;
     pressType: string;
+    isOriginalBet?: boolean; // Add this field to check
   }>;
   showBack9: boolean;
   teams: Array<{
     id: string;
-    color: string;
+    name: string;
+    initial: string;
+    fixedColor: string;
   }>;
 }
 
@@ -25,25 +28,27 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
   showBack9,
   teams
 }) => {
-  // Filter presses where this team is the target team for this hole
-  const pressesForThisCell = presses.filter(press => {
-    const isTargetTeam = press.toTeamId === teamId;
-    const holeIndex = press.holeIndex + 1; // Convert from 0-based to 1-based
-    const isCorrectHole = holeNumber === holeIndex;
+  // Find presses relevant to this hole and team
+  // Filter out original bets - they should not show indicators on the scorecard
+  const relevantPresses = presses.filter(press => {
+    // Skip original bets
+    if (press.isOriginalBet) return false;
     
-    return isTargetTeam && isCorrectHole;
+    // Check if this press originated on this hole
+    if (press.holeIndex !== holeNumber - 1) return false;
+
+    // Check if this team is involved in the press (either pressing or being pressed)
+    return press.fromTeamId === teamId || press.toTeamId === teamId;
   });
-  
-  if (pressesForThisCell.length === 0) {
-    return null;
-  }
-  
+
+  if (relevantPresses.length === 0) return null;
+
   return (
     <View style={styles.container}>
-      {pressesForThisCell.map((press, index) => {
+      {relevantPresses.map((press, index) => {
         // Find the pressing team
         const pressingTeam = teams.find(team => team.id === press.fromTeamId);
-        const dotColor = pressingTeam?.color || '#cccccc';
+        const dotColor = pressingTeam?.fixedColor || '#cccccc';
         
         return (
           <View 

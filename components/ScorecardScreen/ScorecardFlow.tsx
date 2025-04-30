@@ -101,6 +101,17 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     };
   });
 
+  // Add this function at the top level of the component
+  const pressesWithOriginalBetFlags = presses.map(press => {
+    // Check both hole index and press type to determine if it's an original bet
+    const isOriginalBet = (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
+                          (press.holeIndex === 9 && press.pressType === 'back9');
+    return {
+      ...press,
+      isOriginalBet
+    };
+  });
+
   // Create a mock match object for the press summary modal
   const mockMatch = {
     id: matchId,
@@ -219,7 +230,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
                         <PressIndicator 
                           teamId={team.id}
                           holeNumber={hole}
-                          presses={presses}
+                          presses={pressesWithOriginalBetFlags}
                           showBack9={false}
                           teams={teamsWithFixedColors}
                         />
@@ -275,7 +286,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
                         <PressIndicator 
                           teamId={team.id}
                           holeNumber={hole}
-                          presses={presses}
+                          presses={pressesWithOriginalBetFlags}
                           showBack9={true}
                           teams={teamsWithFixedColors}
                         />
@@ -298,7 +309,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       
       {/* Press Notifications Overlay */}
       <PressNotification 
-        presses={presses} 
+        presses={pressesWithOriginalBetFlags} 
         matchId={matchId} 
         showBack9={showingBack9}
         teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor }))}
