@@ -17,7 +17,8 @@
         "UIBackgroundModes": [],
         "UIViewControllerBasedStatusBarAppearance": true,
         "UIStatusBarStyle": "UIStatusBarStyleDefault",
-        "NSLocationWhenInUseUsageDescription": "This app does not use your location."
+        "NSLocationWhenInUseUsageDescription": "This app does not use your location.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "assetBundlePatterns": [
