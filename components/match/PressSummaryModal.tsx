@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, ChevronDown, ChevronUp, DollarSign } from 'lucide-react-native';
 import { calculatePressResults, formatGameType } from '@/utils/helpers';
 
@@ -77,6 +79,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
   match,
   teamColors 
 }) => {
+  const insets = useSafeAreaInsets();
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     front9: true,
     back9: true,
@@ -335,15 +338,39 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       animationType="slide"
       transparent={false}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
+        <View 
+          style={[
+            styles.header, 
+            { 
+              paddingLeft: Math.max(16, insets.left),
+              paddingRight: Math.max(16, insets.right),
+              paddingTop: Platform.OS === 'ios' ? insets.top > 0 ? 0 : 12 : 12
+            }
+          ]}
+        >
           <Text style={styles.title}>Press Summary</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={onClose}
+            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+          >
             <X size={24} color="#333333" />
           </TouchableOpacity>
         </View>
         
-        <ScrollView style={styles.content}>
+        <ScrollView 
+          style={[
+            styles.content, 
+            {
+              paddingLeft: Math.max(16, insets.left),
+              paddingRight: Math.max(16, insets.right)
+            }
+          ]}
+          contentContainerStyle={{
+            paddingBottom: Platform.OS === 'ios' ? 20 : 16
+          }}
+        >
           {renderSection('Front 9 Presses', groupedPresses.front9, 'front9')}
           {renderSection('Back 9 Presses', groupedPresses.back9, 'back9')}
           {renderSection('Total 18 Presses', groupedPresses.total18, 'total18')}
@@ -367,6 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+    zIndex: 10,
   },
   title: {
     fontSize: 20,

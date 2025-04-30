@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 
 interface PressIndicatorProps {
   teamId: string;
@@ -79,6 +79,15 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     margin: 1,
+    // Better rendering on iOS retina displays
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(0,0,0,0.1)',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
+      }
+    }),
   }
 });
 

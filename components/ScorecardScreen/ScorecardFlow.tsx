@@ -9,7 +9,9 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react-native';
 import PressNotification from './PressNotification';
 import PressIndicator from './PressIndicator';
@@ -50,6 +52,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
   onBack,
   matchId
 }) => {
+  const insets = useSafeAreaInsets(); // Get safe area insets
   const [showingBack9, setShowingBack9] = useState(showBack9);
   const [showPressSummary, setShowPressSummary] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -154,15 +157,21 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+    <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
+      <View style={[
+        styles.header, 
+        { paddingTop: Platform.OS === 'ios' ? insets.top > 0 ? 0 : 8 : 8 }
+      ]}>
+        <TouchableOpacity 
+          style={[styles.backButton, { marginLeft: insets.left }]} 
+          onPress={onBack}
+        >
           <ArrowLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Scorecard</Text>
         {presses.length > 0 && (
           <TouchableOpacity 
-            style={styles.pressButton}
+            style={[styles.pressButton, { marginRight: insets.right }]}
             onPress={() => setShowPressSummary(true)}
           >
             <DollarSign size={20} color="#FFFFFF" />
@@ -346,6 +355,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+    zIndex: 10,
   },
   backButton: {
     padding: 8,

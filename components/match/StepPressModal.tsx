@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { 
+  Modal, 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert, 
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Team {
   id: string;
@@ -58,6 +69,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   },
   gameFormats = [] // Default to empty array if not provided
 }) => {
+  const insets = useSafeAreaInsets();
   const [fromTeamId, setFromTeamId] = useState<string | null>(null);
   const [toTeamId, setToTeamId] = useState<string | null>(null);
   const [addedPresses, setAddedPresses] = useState<Array<{
@@ -385,41 +397,67 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       visible={isVisible}
       animationType="slide"
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <Text style={styles.backButtonText}>
-                {showConfirmation ? 'Add More' : 'Back'}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <View style={styles.modalOverlay}>
+          <View 
+            style={[
+              styles.modalContent,
+              {
+                marginBottom: insets.bottom > 0 ? insets.bottom : Platform.OS === 'ios' ? 20 : 0,
+                marginTop: insets.top > 0 ? insets.top : Platform.OS === 'ios' ? 20 : 0,
+                marginLeft: insets.left > 0 ? insets.left : 0,
+                marginRight: insets.right > 0 ? insets.right : 0
+              }
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={handleBack}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <Text style={styles.backButtonText}>
+                  {showConfirmation ? 'Add More' : 'Back'}
+                </Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>
+                {showConfirmation ? 'Review Presses' : 'Add Press'}
               </Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {showConfirmation ? 'Review Presses' : 'Add Press'}
-            </Text>
-            <TouchableOpacity style={styles.closeButton} onPress={resetAndClose}>
-              <Text style={styles.closeButtonText}>×</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={resetAndClose}
+                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+              >
+                <Text style={styles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
 
-          <View style={styles.stepsContainer}>
-            {currentStep === 4
-              ? renderConfirmationStep()
-              : currentStep <= 2
-                ? renderTeamSelectionStep()
-                : renderGameTypeSelectionStep()
-            }
-          </View>
+            <View style={styles.stepsContainer}>
+              {currentStep === 4
+                ? renderConfirmationStep()
+                : currentStep <= 2
+                  ? renderTeamSelectionStep()
+                  : renderGameTypeSelectionStep()
+              }
+            </View>
 
-          {currentStep === 3 && (
-            <TouchableOpacity
-              style={styles.addPressButton}
-              onPress={handleSave}
-            >
-              <Text style={styles.addPressButtonText}>Add Press</Text>
-            </TouchableOpacity>
-          )}
+            {currentStep === 3 && (
+              <TouchableOpacity
+                style={[
+                  styles.addPressButton,
+                  { marginBottom: Platform.OS === 'ios' ? 8 : 15 }
+                ]}
+                onPress={handleSave}
+              >
+                <Text style={styles.addPressButtonText}>Add Press</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -430,13 +468,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    // Add padding for iOS devices
+    ...Platform.select({
+      ios: {
+        paddingHorizontal: 10,
+      }
+    }),
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     width: '90%',
     maxWidth: 400,
-    maxHeight: '80%',
+    maxHeight: '85%', // Slight reduction to ensure visibility on smaller devices
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -474,6 +518,7 @@ const styles = StyleSheet.create({
   },
   stepsContainer: {
     padding: 20,
+    flex: 1, // Make this flex to ensure scrolling works properly
   },
   pressDetailsTitle: {
     fontSize: 16,
@@ -563,11 +608,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 15,
     borderRadius: 8,
-  },
-  addPressButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    // Better touch target for iOS
+    ...Platform.select({
+      ios: {
+        paddingVertical: 16,
+      }
+    }),
   },
   confirmationItem: {
     backgroundColor: '#F5F5F5',

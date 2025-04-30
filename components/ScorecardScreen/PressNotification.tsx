@@ -1,6 +1,7 @@
 // components/ScorecardScreen/PressNotification.tsx
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Press {
   id: string;
@@ -27,6 +28,8 @@ const PressNotification: React.FC<PressNotificationProps> = ({
   showBack9,
   teams
 }) => {
+  const insets = useSafeAreaInsets();
+
   // Only show notifications for non-original bet presses
   const filteredPresses = presses.filter(press => {
     // Skip original bets for notification display
@@ -80,7 +83,16 @@ const PressNotification: React.FC<PressNotificationProps> = ({
   
   // This will be used by ScorecardFlow to render the dots in the correct cells
   return (
-    <View style={styles.container}>
+    <View 
+      style={[
+        styles.container,
+        {
+          // Ensure the notifications stay within safe area
+          marginLeft: insets.left,
+          marginRight: insets.right
+        }
+      ]}
+    >
       {/* We'll return an empty container - the actual indicators will be rendered in ScorecardFlow */}
     </View>
   );
