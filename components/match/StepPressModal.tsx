@@ -615,6 +615,11 @@ const styles = StyleSheet.create({
       }
     }),
   },
+  addPressButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   confirmationItem: {
     backgroundColor: '#F5F5F5',
     borderRadius: 8,

@@ -5,12 +5,12 @@ import {
   Text, 
   StyleSheet, 
   TouchableOpacity, 
-  SafeAreaView,
   ScrollView,
   Animated,
   Dimensions,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react-native';
 import PressNotification from './PressNotification';

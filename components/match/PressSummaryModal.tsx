@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, ChevronDown, ChevronUp, DollarSign } from 'lucide-react-native';
 import { calculatePressResults, formatGameType } from '@/utils/helpers';
