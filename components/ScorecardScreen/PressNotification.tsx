@@ -1,6 +1,6 @@
 // components/ScorecardScreen/PressNotification.tsx
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Press {
@@ -32,68 +32,43 @@ const PressNotification: React.FC<PressNotificationProps> = ({
 
   // Only show notifications for non-original bet presses
   const filteredPresses = presses.filter(press => {
-    // Skip original bets for notification display
+    // Filter out original bets - we don't want notifications for these
     if (press.isOriginalBet) return false;
     
-    // Only show presses for the current 9 holes being viewed
-    const pressHole = press.holeIndex + 1; // Convert to 1-indexed
-    
+    // Show relevant presses based on current view (front9 or back9)
     if (showBack9) {
-      return pressHole >= 10 && pressHole <= 18;
+      // For back9 view, only show presses on holes 10-18 (indices 9-17)
+      return press.holeIndex >= 9 && press.holeIndex <= 17;
     } else {
-      return pressHole >= 1 && pressHole <= 9;
+      // For front9 view, only show presses on holes 1-9 (indices 0-8)
+      return press.holeIndex >= 0 && press.holeIndex <= 8;
     }
   });
 
-  // Define fixed team colors (important for consistent team identification)
-  const FIXED_TEAM_COLORS: Record<string, string> = {
-    '1': '#4CAE4F', // Team 1 - Green
-    '2': '#FFC105', // Team 2 - Yellow
-  };
-  
-  // Group presses by target team and hole
-  const getPressesByHoleAndTeam = () => {
-    const pressesByHoleAndTeam: Record<string, Record<string, string[]>> = {};
-    
-    filteredPresses.forEach(press => {
-      const holeOffset = showBack9 ? 9 : 0;
-      const adjustedHoleIndex = press.holeIndex - holeOffset;
-      const holeKey = `hole-${adjustedHoleIndex}`;
-      
-      // Create nested structure if it doesn't exist
-      if (!pressesByHoleAndTeam[holeKey]) {
-        pressesByHoleAndTeam[holeKey] = {};
-      }
-      
-      // Create array for target team if it doesn't exist
-      if (!pressesByHoleAndTeam[holeKey][press.toTeamId]) {
-        pressesByHoleAndTeam[holeKey][press.toTeamId] = [];
-      }
-      
-      // Find the pressing team's color
-      const pressingTeam = teams.find(team => team.id === press.fromTeamId);
-      const teamColor = pressingTeam?.color || FIXED_TEAM_COLORS['1'];
-      
-      // Add the color to the array for this hole and target team
-      pressesByHoleAndTeam[holeKey][press.toTeamId].push(teamColor);
-    });
-    
-    return pressesByHoleAndTeam;
-  };
-  
-  // This will be used by ScorecardFlow to render the dots in the correct cells
+  if (filteredPresses.length === 0) return null;
+
   return (
-    <View 
-      style={[
-        styles.container,
-        {
-          // Ensure the notifications stay within safe area
-          marginLeft: insets.left,
-          marginRight: insets.right
-        }
-      ]}
-    >
-      {/* We'll return an empty container - the actual indicators will be rendered in ScorecardFlow */}
+    <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
+      {filteredPresses.map(press => {
+        const fromTeam = teams.find(team => team.id === press.fromTeamId);
+        const toTeam = teams.find(team => team.id === press.toTeamId);
+        
+        if (!fromTeam || !toTeam) return null;
+        
+        const holeNumber = press.holeIndex + 1;
+        
+        return (
+          <View 
+            key={press.id} 
+            style={[styles.notification, { borderColor: fromTeam.color }]}
+          >
+            <View style={[styles.indicator, { backgroundColor: fromTeam.color }]} />
+            <Text style={styles.notificationText}>
+              New Press on Hole {holeNumber}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 };
@@ -101,15 +76,42 @@ const PressNotification: React.FC<PressNotificationProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    pointerEvents: 'none', // Allow touches to pass through
-    opacity: 0, // Make this container invisible as we'll render indicators directly in cells
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+    alignItems: 'center',
+    gap: 8,
   },
-  pressIndicator: {
+  notification: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#cccccc',
+  },
+  indicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    margin: 1,
-  }
+    marginRight: 8,
+  },
+  notificationText: {
+    color: '#333333',
+    fontWeight: '500',
+    fontSize: 14,
+  },
 });
 
 export default PressNotification;

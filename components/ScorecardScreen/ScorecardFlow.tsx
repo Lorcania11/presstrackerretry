@@ -104,11 +104,14 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     };
   });
 
-  // Add this function at the top level of the component
+  // Make sure the pressesWithOriginalBets calculation is consistent in ScorecardFlow.tsx
   const pressesWithOriginalBetFlags = presses.map(press => {
     // Check both hole index and press type to determine if it's an original bet
+    // Original bets are:
+    // - front9 or total18 presses on hole 1 (holeIndex 0)
+    // - back9 presses on hole 10 (holeIndex 9)
     const isOriginalBet = (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
-                          (press.holeIndex === 9 && press.pressType === 'back9');
+                           (press.holeIndex === 9 && press.pressType === 'back9');
     return {
       ...press,
       isOriginalBet

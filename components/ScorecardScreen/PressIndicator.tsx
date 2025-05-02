@@ -34,8 +34,13 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
     // Skip original bets
     if (press.isOriginalBet) return false;
     
+    // Calculate the actual hole index we're looking at based on showBack9
+    const currentHoleIndex = showBack9 
+      ? holeNumber + 9 - 1  // Adjust for back 9 view (holes 10-18)
+      : holeNumber - 1;     // Front 9 view (holes 1-9)
+    
     // Check if this press originated on this hole
-    if (press.holeIndex !== holeNumber - 1) return false;
+    if (press.holeIndex !== currentHoleIndex) return false;
 
     // Check if this team is involved in the press (either pressing or being pressed)
     return press.fromTeamId === teamId || press.toTeamId === teamId;
