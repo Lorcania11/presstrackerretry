@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react-native';
+import { ArrowLeft, DollarSign } from 'lucide-react-native';
 import PressNotification from './PressNotification';
 import PressIndicator from './PressIndicator';
 import PressSummaryModal from '@/components/match/PressSummaryModal';
@@ -85,12 +85,11 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     return {
       front9,
       back9,
-      // Fix: Ensure we're adding two numbers, not potentially null values
       total: front9 + back9
     };
   };
   
-  // Get hole numbers as column headers
+  // Get hole numbers
   const frontNine = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const backNine = [10, 11, 12, 13, 14, 15, 16, 17, 18];
   
@@ -201,119 +200,175 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         </TouchableOpacity>
       </View>
       
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.scrollContent, { transform: [{ translateX: slideAnim }] }]}>
           <View style={styles.tableContainer}>
             {/* First Scorecard (Front 9) */}
             <View style={[styles.scorecard, { width }]}>
-              {/* Scorecard Header */}
-              <View style={styles.headerRow}>
-                <View style={styles.nameCell}>
-                  <Text style={styles.headerText}>Team</Text>
+              {/* Team Headers Row */}
+              <View style={styles.teamHeaderRow}>
+                <View style={styles.holeColumn}>
+                  <Text style={styles.headerText}>Hole</Text>
                 </View>
-                {frontNine.map(hole => (
-                  <View key={`hole-${hole}`} style={styles.holeCell}>
-                    <Text style={[styles.headerText, currentHole === hole && styles.currentHoleText]}>
-                      {hole}
+                
+                {teamsWithFixedColors.map((team) => (
+                  <View key={`team-header-${team.id}`} style={styles.teamHeaderCell}>
+                    <View style={[styles.teamCircle, { backgroundColor: team.fixedColor }]}>
+                      <Text style={styles.teamInitial}>{team.initial}</Text>
+                    </View>
+                    <Text style={styles.teamName} numberOfLines={1} ellipsizeMode="tail">
+                      {team.name}
                     </Text>
                   </View>
                 ))}
-                <View style={styles.totalCell}>
-                  <Text style={styles.headerText}>F9</Text>
-                </View>
               </View>
               
-              {/* Team Scores */}
-              {teamsWithFixedColors.map((team, idx) => {
-                const totals = calculateTeamTotals(team.scores);
+              {/* Hole Rows */}
+              {frontNine.map((holeNumber) => {
+                // Adjust for zero-based indexing
+                const holeIndex = holeNumber - 1;
                 return (
-                  <View key={team.id} style={styles.scoreRow}>
-                    <View style={styles.nameCell}>
-                      <View style={[styles.teamCircle, { backgroundColor: team.fixedColor }]}>
-                        <Text style={styles.teamInitial}>{team.initial}</Text>
-                      </View>
+                  <View 
+                    key={`hole-${holeNumber}`} 
+                    style={[
+                      styles.holeRow,
+                      currentHole === holeNumber && styles.currentHoleRow
+                    ]}
+                  >
+                    <View style={styles.holeColumn}>
+                      <Text style={[
+                        styles.holeNumber, 
+                        currentHole === holeNumber && styles.currentHoleText
+                      ]}>
+                        {holeNumber}
+                      </Text>
                     </View>
                     
-                    {frontNine.map((hole, holeIdx) => (
-                      <View key={`${team.id}-hole-${hole}`} style={styles.holeCell}>
+                    {teamsWithFixedColors.map((team) => (
+                      <View key={`score-${team.id}-${holeNumber}`} style={styles.scoreCell}>
                         <Text style={styles.scoreText}>
-                          {team.scores[holeIdx] !== null ? team.scores[holeIdx] : ''}
+                          {team.scores[holeIndex] !== null ? team.scores[holeIndex] : ''}
                         </Text>
                         <PressIndicator 
                           teamId={team.id}
-                          holeNumber={hole}
+                          holeNumber={holeNumber}
                           presses={pressesWithOriginalBetFlags}
                           showBack9={false}
                           teams={teamsWithFixedColors}
                         />
                       </View>
                     ))}
-                    
-                    <View style={styles.totalCell}>
-                      <Text style={styles.totalText}>{totals.front9}</Text>
-                    </View>
                   </View>
                 );
               })}
+              
+              {/* Front 9 Totals Row */}
+              <View style={styles.totalRow}>
+                <View style={styles.holeColumn}>
+                  <Text style={styles.totalLabel}>Front 9</Text>
+                </View>
+                
+                {teamsWithFixedColors.map((team) => {
+                  const totals = calculateTeamTotals(team.scores);
+                  return (
+                    <View key={`total-front-${team.id}`} style={styles.totalCell}>
+                      <Text style={styles.totalText}>{totals.front9}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
             
             {/* Second Scorecard (Back 9) */}
             <View style={[styles.scorecard, { width }]}>
-              {/* Scorecard Header */}
-              <View style={styles.headerRow}>
-                <View style={styles.nameCell}>
-                  <Text style={styles.headerText}>Team</Text>
+              {/* Team Headers Row (Back 9) */}
+              <View style={styles.teamHeaderRow}>
+                <View style={styles.holeColumn}>
+                  <Text style={styles.headerText}>Hole</Text>
                 </View>
-                {backNine.map(hole => (
-                  <View key={`hole-${hole}`} style={styles.holeCell}>
-                    <Text style={[styles.headerText, currentHole === hole && styles.currentHoleText]}>
-                      {hole}
+                
+                {teamsWithFixedColors.map((team) => (
+                  <View key={`team-header-back-${team.id}`} style={styles.teamHeaderCell}>
+                    <View style={[styles.teamCircle, { backgroundColor: team.fixedColor }]}>
+                      <Text style={styles.teamInitial}>{team.initial}</Text>
+                    </View>
+                    <Text style={styles.teamName} numberOfLines={1} ellipsizeMode="tail">
+                      {team.name}
                     </Text>
                   </View>
                 ))}
-                <View style={styles.totalCell}>
-                  <Text style={styles.headerText}>B9</Text>
-                </View>
-                <View style={styles.totalCell}>
-                  <Text style={styles.headerText}>Tot</Text>
-                </View>
               </View>
               
-              {/* Team Scores */}
-              {teamsWithFixedColors.map((team, idx) => {
-                const totals = calculateTeamTotals(team.scores);
+              {/* Hole Rows (Back 9) */}
+              {backNine.map((holeNumber) => {
+                // Adjust for zero-based indexing
+                const holeIndex = holeNumber - 1;
                 return (
-                  <View key={team.id} style={styles.scoreRow}>
-                    <View style={styles.nameCell}>
-                      <View style={[styles.teamCircle, { backgroundColor: team.fixedColor }]}>
-                        <Text style={styles.teamInitial}>{team.initial}</Text>
-                      </View>
+                  <View 
+                    key={`hole-${holeNumber}`} 
+                    style={[
+                      styles.holeRow,
+                      currentHole === holeNumber && styles.currentHoleRow
+                    ]}
+                  >
+                    <View style={styles.holeColumn}>
+                      <Text style={[
+                        styles.holeNumber, 
+                        currentHole === holeNumber && styles.currentHoleText
+                      ]}>
+                        {holeNumber}
+                      </Text>
                     </View>
                     
-                    {backNine.map((hole, holeIdx) => (
-                      <View key={`${team.id}-hole-${hole}`} style={styles.holeCell}>
+                    {teamsWithFixedColors.map((team) => (
+                      <View key={`score-${team.id}-${holeNumber}`} style={styles.scoreCell}>
                         <Text style={styles.scoreText}>
-                          {team.scores[holeIdx + 9] !== null ? team.scores[holeIdx + 9] : ''}
+                          {team.scores[holeIndex] !== null ? team.scores[holeIndex] : ''}
                         </Text>
                         <PressIndicator 
                           teamId={team.id}
-                          holeNumber={hole}
+                          holeNumber={holeNumber}
                           presses={pressesWithOriginalBetFlags}
                           showBack9={true}
                           teams={teamsWithFixedColors}
                         />
                       </View>
                     ))}
-                    
-                    <View style={styles.totalCell}>
-                      <Text style={styles.totalText}>{totals.back9}</Text>
-                    </View>
-                    <View style={styles.totalCell}>
-                      <Text style={styles.totalText}>{totals.total}</Text>
-                    </View>
                   </View>
                 );
               })}
+              
+              {/* Back 9 Totals Row */}
+              <View style={styles.totalRow}>
+                <View style={styles.holeColumn}>
+                  <Text style={styles.totalLabel}>Back 9</Text>
+                </View>
+                
+                {teamsWithFixedColors.map((team) => {
+                  const totals = calculateTeamTotals(team.scores);
+                  return (
+                    <View key={`total-back-${team.id}`} style={styles.totalCell}>
+                      <Text style={styles.totalText}>{totals.back9}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+              
+              {/* Total 18 Totals Row */}
+              <View style={styles.totalRow}>
+                <View style={styles.holeColumn}>
+                  <Text style={styles.totalLabel}>Total</Text>
+                </View>
+                
+                {teamsWithFixedColors.map((team) => {
+                  const totals = calculateTeamTotals(team.scores);
+                  return (
+                    <View key={`total-all-${team.id}`} style={styles.totalCell}>
+                      <Text style={styles.totalText}>{totals.total}</Text>
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           </View>
         </Animated.View>
@@ -324,7 +379,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         presses={pressesWithOriginalBetFlags} 
         matchId={matchId} 
         showBack9={showingBack9}
-        teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor }))}
+        teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor, name: team.name }))}
       />
 
       {showPressSummary && (
@@ -368,8 +423,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333333',
   },
-  headerRight: {
-    width: 40,
+  pressButton: {
+    backgroundColor: '#FF9800',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -403,84 +464,116 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   scorecard: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     paddingTop: 16,
+    paddingBottom: 20,
   },
-  headerRow: {
+  teamHeaderRow: {
     flexDirection: 'row',
-    borderBottomWidth: 2,
-    borderBottomColor: '#DDDDDD',
-    paddingBottom: 8,
-  },
-  scoreRow: {
-    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
-    paddingVertical: 8,
+  },
+  teamHeaderCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  holeRow: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
     alignItems: 'center',
   },
-  nameCell: {
+  currentHoleRow: {
+    backgroundColor: '#F0F8FF',
+  },
+  holeColumn: {
     width: 50,
-    justifyContent: 'center',
     alignItems: 'center',
-  },
-  holeCell: {
-    width: 36,
     justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative', // Add this to allow absolute positioning of the indicators
   },
-  totalCell: {
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F0F0F0',
-  },
-  headerText: {
-    fontSize: 14,
-    fontWeight: '600',
+  holeNumber: {
+    fontSize: 16,
+    fontWeight: '500',
     color: '#555555',
   },
   currentHoleText: {
     backgroundColor: '#007AFF',
     color: '#FFFFFF',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     textAlign: 'center',
     textAlignVertical: 'center',
     overflow: 'hidden',
+    lineHeight: 28,
+  },
+  scoreCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative', // To allow for positioning of PressIndicator
+    minHeight: 32,
   },
   scoreText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#333333',
   },
-  totalText: {
+  totalRow: {
+    flexDirection: 'row',
+    backgroundColor: '#F8F8F8',
+    paddingVertical: 12,
+    marginTop: 1,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  totalCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  totalLabel: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#555555',
+  },
+  totalText: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#333333',
   },
   teamCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 4,
   },
   teamInitial: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-  pressButton: {
-    backgroundColor: '#FF9800',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+  teamName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#555555',
+    textAlign: 'center',
+    maxWidth: 80,
+  },
+  headerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#777777',
   },
 });
 
