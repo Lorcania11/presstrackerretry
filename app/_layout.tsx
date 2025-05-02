@@ -30,6 +30,14 @@ export default function RootLayout() {
               animation: 'slide_from_bottom',
             }} 
           />
+          <Stack.Screen 
+            name="match/score-input/[id]" 
+            options={{ 
+              headerShown: false,
+              presentation: 'card', // Important - not a modal
+              animation: 'slide_from_right',
+            }} 
+          />
         </Stack>
         <StatusBar style="dark" />
       </MatchProvider>
