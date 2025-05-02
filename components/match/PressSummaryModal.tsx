@@ -56,6 +56,7 @@ interface PressWithResults {
   amount: number;
   holeNumber: number;
   isOriginalBet?: boolean;
+  netResult?: string;
 }
 
 interface GroupedPresses {
@@ -265,6 +266,33 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
           </Text>
         </View>
         
+        {press.status === 'in-progress' && press.netResult && (
+          <View 
+            style={[
+              styles.winnerContainer, 
+              { 
+                borderColor: press.netResult.includes('up') ? '#4CAF50' : press.netResult === 'tied' ? '#888888' : '#FF9800',
+                backgroundColor: Platform.OS === 'ios' ? 
+                  press.netResult.includes('up') ? 'rgba(76,174,79,0.1)' : 
+                  press.netResult === 'tied' ? 'rgba(136,136,136,0.1)' : 
+                  'rgba(255,152,0,0.1)' : 'rgba(255,255,255,0.7)'
+              }
+            ]}
+          >
+            <Text 
+              style={[
+                styles.winnerText, 
+                { 
+                  color: press.netResult.includes('up') ? '#4CAF50' : 
+                         press.netResult === 'tied' ? '#888888' : '#FF9800'
+                }
+              ]}
+            >
+              {press.netResult}
+            </Text>
+          </View>
+        )}
+        
         {isWinner && press.winner !== 'tie' && (
           <View 
             style={[
@@ -351,16 +379,11 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
     let winner = null;
     
     // Logic to determine winner based on press type and hole completion
-    // For actual implementation, you'd need more complex logic based on rules
-    // This is a simplified version
-    
-    // Example simplified evaluation (would need to be expanded with actual golf rules)
-    if (normalizedPressType === 'front9' && holeNumber <= 9 && 
+    if (normalizedPressType === 'front9' && 
         match.holes[8]?.isComplete) {
       status = 'completed';
-      // Simple logic to determine winner (to be replaced with actual rules)
       winner = determineWinner(press, match, 0, 8);
-    } else if (normalizedPressType === 'back9' && holeNumber >= 10 && 
+    } else if (normalizedPressType === 'back9' && 
               match.holes[17]?.isComplete) {
       status = 'completed';
       winner = determineWinner(press, match, 9, 17);
@@ -368,6 +391,68 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
               match.holes[17]?.isComplete) {
       status = 'completed';
       winner = determineWinner(press, match, 0, 17);
+    }
+
+    // Calculate net result for in-progress presses
+    let netResult = undefined;
+    if (status === 'in-progress') {
+      // For front9, check holes 1 to current
+      let fromTeamScore = 0;
+      let toTeamScore = 0;
+      let lastCompletedHole = 0;
+      let scoreCountStartHole = 0;
+      let scoreCountEndHole = 0;
+      
+      if (normalizedPressType === 'front9') {
+        scoreCountStartHole = Math.max(press.holeIndex, 0); // Start from press hole for front9
+        scoreCountEndHole = 8; // End at hole 9 (index 8)
+      } else if (normalizedPressType === 'back9') {
+        scoreCountStartHole = Math.max(press.holeIndex, 9); // Start from press hole for back9
+        scoreCountEndHole = 17; // End at hole 18 (index 17)
+      } else if (normalizedPressType === 'total18') {
+        scoreCountStartHole = Math.max(press.holeIndex, 0); // Start from press hole for total18
+        scoreCountEndHole = 17; // End at hole 18 (index 17)
+      }
+      
+      // Find the last completed hole up to the end
+      for (let i = scoreCountEndHole; i >= scoreCountStartHole; i--) {
+        if (match.holes[i]?.isComplete) {
+          lastCompletedHole = i;
+          break;
+        }
+      }
+
+      // Calculate scores up to the last completed hole
+      for (let i = scoreCountStartHole; i <= lastCompletedHole; i++) {
+        if (!match.holes[i]?.isComplete) continue;
+        
+        const fromTeamHoleScore = match.holes[i].scores.find(
+          s => s.teamId === press.fromTeamId
+        )?.score;
+        
+        const toTeamHoleScore = match.holes[i].scores.find(
+          s => s.teamId === press.toTeamId
+        )?.score;
+        
+        if (fromTeamHoleScore !== null && toTeamHoleScore !== null) {
+          fromTeamScore += fromTeamHoleScore!;
+          toTeamScore += toTeamHoleScore!;
+        }
+      }
+      
+      // Calculate who is up/down
+      const holesPlayed = lastCompletedHole - scoreCountStartHole + 1;
+      if (holesPlayed > 0) {
+        if (fromTeamScore < toTeamScore) {
+          const diff = toTeamScore - fromTeamScore;
+          netResult = `${teamMap[press.fromTeamId].name} ${diff} up`;
+        } else if (toTeamScore < fromTeamScore) {
+          const diff = fromTeamScore - toTeamScore;
+          netResult = `${teamMap[press.toTeamId].name} ${diff} up`;
+        } else {
+          netResult = 'tied';
+        }
+      }
     }
     
     const processedPress: PressWithResults = {
@@ -384,7 +469,8 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
       status,
       winner,
       amount: betAmounts[normalizedPressType] || 0,
-      isOriginalBet: press.isOriginalBet
+      isOriginalBet: press.isOriginalBet,
+      netResult
     };
     
     groupedPresses[normalizedPressType].push(processedPress);

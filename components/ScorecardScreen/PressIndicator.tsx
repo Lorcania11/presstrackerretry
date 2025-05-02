@@ -10,14 +10,15 @@ interface PressIndicatorProps {
     toTeamId: string;
     holeIndex: number;
     pressType: string;
-    isOriginalBet?: boolean; // Add this field to check
+    isOriginalBet?: boolean;
   }>;
   showBack9: boolean;
   teams: Array<{
     id: string;
     name: string;
-    initial: string;
-    fixedColor: string;
+    initial?: string;
+    color?: string;
+    fixedColor?: string;
   }>;
 }
 
@@ -28,26 +29,20 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
   showBack9,
   teams
 }) => {
-  // Find presses relevant to this hole and team
-  // Filter out original bets - they should not show indicators on the scorecard
+  // Determine proper hole index from hole number
+  const currentHoleIndex = holeNumber - 1;
+  
+  // Find presses that originated on this hole
   const relevantPresses = presses.filter(press => {
-    // Skip original bets
-    if (press.isOriginalBet) return false;
-    
-    // Calculate the actual hole index we're looking at based on showBack9
-    // For back9 view, hole numbers are 10-18 (indices 9-17)
-    // For front9 view, hole numbers are 1-9 (indices 0-8)
-    const currentHoleIndex = showBack9 
-      ? holeNumber - 1  // Back 9 view: convert hole number (10-18) to index (9-17)
-      : holeNumber - 1; // Front 9 view: convert hole number (1-9) to index (0-8)
-    
-    // Check if this press originated on this hole
-    if (press.holeIndex !== currentHoleIndex) return false;
-
-    // Check if this team is involved in the press (either pressing or being pressed)
-    return press.fromTeamId === teamId || press.toTeamId === teamId;
+    // Include all presses at this hole (both original and subsequent)
+    if (press.holeIndex === currentHoleIndex) {
+      // Check if this team is involved in the press (either pressing or being pressed)
+      return press.fromTeamId === teamId || press.toTeamId === teamId;
+    }
+    return false;
   });
 
+  // If no relevant presses, don't render anything
   if (relevantPresses.length === 0) return null;
 
   return (
@@ -57,12 +52,17 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
       accessible={true}
     >
       {relevantPresses.map((press, index) => {
-        // Find the pressing team
+        // Get the color of the pressing team
         const pressingTeam = teams.find(team => team.id === press.fromTeamId);
-        const dotColor = pressingTeam?.fixedColor || '#cccccc';
+        // Use fixedColor as first priority, then regular color, then fallback
+        const dotColor = pressingTeam?.fixedColor || pressingTeam?.color || '#CCCCCC';
         
         // Determine if this team is pressing or being pressed
         const isPressing = press.fromTeamId === teamId;
+        const isBeingPressed = press.toTeamId === teamId;
+        
+        // Skip if team is not involved (shouldn't happen due to filter above)
+        if (!isPressing && !isBeingPressed) return null;
         
         return (
           <View 
@@ -70,10 +70,10 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
             style={[
               styles.indicator,
               { backgroundColor: dotColor },
-              // Make pressing indicators slightly larger for better visibility on iOS
-              Platform.OS === 'ios' && isPressing && styles.iOsPressingIndicator
+              isPressing ? styles.pressingIndicator : styles.pressedIndicator,
+              // iOS-specific enhancement
+              Platform.OS === 'ios' && styles.iOSIndicator
             ]}
-            accessibilityElementsHidden={true} // Hide from screen readers as parent is accessible
           />
         );
       })}
@@ -85,43 +85,48 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     position: 'absolute',
-    bottom: 1,
-    right: 1,
+    bottom: 2,
+    right: 2,
     flexWrap: 'wrap',
-    maxWidth: '75%',
     justifyContent: 'flex-end',
-    // Add iOS-specific z-index to ensure indicators are on top
-    ...Platform.select({
-      ios: {
-        zIndex: 10,
-      }
-    })
+    zIndex: 10, // Ensure indicators are on top across all platforms
   },
   indicator: {
     width: 6,
     height: 6,
     borderRadius: 3,
     margin: 1,
-    // Better rendering on iOS retina displays with more refined shadow
+    // iOS shadow enhancement
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(0,0,0,0.2)',
+        shadowColor: 'rgba(0,0,0,0.3)',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.5,
         shadowRadius: 1,
-      }
+      },
+      android: {
+        elevation: 2,
+      },
     }),
   },
-  iOsPressingIndicator: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    // Even better shadow for pressing indicators to make them stand out more on iOS
-    shadowColor: 'rgba(0,0,0,0.3)',
+  pressingIndicator: {
+    width: 8, // Slightly larger for the pressing team
+    height: 8,
+    borderRadius: 4,
+    opacity: 0.9,
+  },
+  pressedIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    opacity: 0.7,
+  },
+  iOSIndicator: {
+    shadowColor: 'rgba(0,0,0,0.4)',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.6,
     shadowRadius: 1.5,
-  }
+  },
 });
 
 export default PressIndicator;
