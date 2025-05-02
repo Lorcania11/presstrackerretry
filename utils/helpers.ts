@@ -474,3 +474,39 @@ const getPressAmount = (pressType: string, teams: MatchTeam[]): number => {
   // This is just a placeholder implementation
   return defaultAmounts[pressType as keyof typeof defaultAmounts] || 10;
 };
+
+// Add a function to get match status for specific holes
+export const calculateMatchStatusForHoles = (
+  teams: MatchTeam[], 
+  holes: Hole[], 
+  playFormat: "match" | "stroke",
+  holeRange: { startIndex: number, endIndex: number }
+): { statusMessage: string; winner: string | null } => {
+  const { startIndex, endIndex } = holeRange;
+  
+  // Filter only the holes in the specified range
+  const relevantHoles = holes.filter((_, index) => 
+    index >= startIndex && index <= endIndex && holes[index].isComplete
+  );
+  
+  if (teams.length !== 2 || relevantHoles.length === 0) {
+    return { statusMessage: "No completed holes", winner: null };
+  }
+  
+  const team1 = teams[0];
+  const team2 = teams[1];
+  
+  if (playFormat === 'match') {
+    const result = calculateMatchPlay(teams, relevantHoles);
+    return { 
+      statusMessage: result.status,
+      winner: result.winner
+    };
+  } else {
+    const result = calculateStrokePlay(teams, relevantHoles);
+    return { 
+      statusMessage: result.status,
+      winner: result.winner
+    };
+  }
+};

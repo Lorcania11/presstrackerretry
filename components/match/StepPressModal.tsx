@@ -56,6 +56,10 @@ interface StepPressModalProps {
   onSave: (press: Omit<Press, 'id'>) => void;
   teamColors?: {[key: string]: string};
   gameFormats?: GameFormat[]; // Add this prop to receive game formats from match creation
+  matchStatus?: {
+    statusMessage: string;
+    gameType: string;
+  } | null;
 }
 
 const StepPressModal: React.FC<StepPressModalProps> = ({
@@ -68,7 +72,8 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
     '1': '#4CAE4F', // Default green for Team 1
     '2': '#FFC105', // Default yellow for Team 2
   },
-  gameFormats = [] // Default to empty array if not provided
+  gameFormats = [], // Default to empty array if not provided
+  matchStatus = null
 }) => {
   const insets = useSafeAreaInsets();
   const [fromTeamId, setFromTeamId] = useState<string | null>(null);
@@ -301,6 +306,13 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   const renderTeamSelectionStep = () => (
     <ScrollView>
       <Text style={styles.pressDetailsTitle}>Who's Pressing?</Text>
+
+      {matchStatus && (
+        <View style={styles.matchStatusContainer}>
+          <Text style={styles.matchStatusTitle}>Current Match Status:</Text>
+          <Text style={styles.matchStatusMessage}>{matchStatus.statusMessage}</Text>
+        </View>
+      )}
 
       <View style={styles.teamsContainer}>
         {teams.map((pressingTeam, pressingIdx) => {
@@ -691,7 +703,26 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontStyle: 'italic',
     textAlign: 'center',
-  }
+  },
+  matchStatusContainer: {
+    backgroundColor: '#F0F8FF',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  matchStatusTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  matchStatusMessage: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#007AFF',
+  },
 });
 
 export default StepPressModal;

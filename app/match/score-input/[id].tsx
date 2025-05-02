@@ -16,6 +16,7 @@ import { useMatches } from '@/hooks/useMatches';
 import { ChevronLeft, ArrowLeft, ArrowRight, DollarSign } from 'lucide-react-native';
 import PressSummaryModal from '@/components/match/PressSummaryModal';
 import StepPressModal from '@/components/match/StepPressModal';
+import { calculateMatchPlay, calculateStrokePlay } from '@/utils/helpers';
 
 // Define interfaces for type safety
 interface HoleScore {
@@ -79,6 +80,10 @@ export default function ScoreInputScreen() {
   const [currentHoleSaved, setCurrentHoleSaved] = useState<boolean>(false);
   const [showPressModal, setShowPressModal] = useState(false);
   const [showPressSummary, setShowPressSummary] = useState(false);
+  const [pressModalInfo, setPressModalInfo] = useState<{
+    statusMessage: string;
+    gameType: string;
+  } | null>(null);
   
   // Map to keep track of team IDs to fixed colors
   const [teamFixedColors, setTeamFixedColors] = useState<{[teamId: string]: string}>({});
@@ -221,10 +226,109 @@ export default function ScoreInputScreen() {
       setCurrentHoleSaved(true);
     }
     
-    // Show press modal if this is a completed hole
+    // Show press modal if this is a completed hole and user has enabled presses
     if (showPressModalAfter && match.enablePresses && isHoleComplete) {
+      // Calculate who is up/down for each game format
+      calculatePressStatus(updatedMatch);
       setShowPressModal(true);
     }
+  };
+  
+  const calculatePressStatus = (match: MatchDetail) => {
+    if (!match || match.teams.length !== 2) return;
+    
+    const team1 = match.teams[0];
+    const team2 = match.teams[1];
+    
+    // Determine which nine we're on
+    const isOnFrontNine = currentHoleIndex < 9;
+    const isOnBackNine = currentHoleIndex >= 9;
+    
+    // Filter holes based on which nine we're on
+    const relevantHoles = match.holes.filter((hole, index) => {
+      if (isOnFrontNine) return index < 9 && index <= currentHoleIndex && hole.isComplete;
+      if (isOnBackNine) return index >= 9 && index <= currentHoleIndex && hole.isComplete;
+      return false;
+    });
+    
+    // Find the original bet for this nine
+    const originalBet = match.presses.find(press => {
+      if (isOnFrontNine) return press.pressType === 'front9' && press.isOriginalBet;
+      if (isOnBackNine) return press.pressType === 'back9' && press.isOriginalBet;
+      return false;
+    });
+    
+    // Find the most recent press for this nine if any (not original bet)
+    const recentPresses = match.presses
+      .filter(press => {
+        if (isOnFrontNine) return press.pressType === 'front9' && !press.isOriginalBet;
+        if (isOnBackNine) return press.pressType === 'back9' && !press.isOriginalBet;
+        return false;
+      })
+      .sort((a, b) => b.holeIndex - a.holeIndex); // Sort by hole index descending
+    
+    const mostRecentPress = recentPresses.length > 0 ? recentPresses[0] : null;
+    
+    let statusMessage = '';
+    let gameType = isOnFrontNine ? 'front9' : 'back9';
+    
+    if (match.playFormat === 'match') {
+      // Match play calculation
+      const frontOrBackHoles = relevantHoles.map(hole => ({ ...hole }));
+      
+      // Create a subset match for calculation
+      const tempMatch = {
+        ...match,
+        holes: frontOrBackHoles
+      };
+      
+      const result = calculateMatchPlay(match.teams, frontOrBackHoles);
+      statusMessage = result.status;
+      
+      // Simplify the status message
+      if (statusMessage.includes('UP')) {
+        const parts = statusMessage.split(' ');
+        const upTeam = parts[0];
+        const upAmount = parseInt(parts[1], 10) || 0;
+        
+        if (upTeam === team1.name) {
+          statusMessage = `${team1.name} is ${upAmount} UP`;
+        } else {
+          statusMessage = `${team1.name} is ${upAmount} DOWN`;
+        }
+      } else if (statusMessage.includes('All Square')) {
+        statusMessage = `Match is tied (All Square)`;
+      }
+    } else {
+      // Stroke play calculation
+      const result = calculateStrokePlay(match.teams, relevantHoles);
+      
+      if (result.details && !Array.isArray(result.details)) {
+        const frontNineStatus = "Status not available";
+        statusMessage = frontNineStatus;
+      } else if (Array.isArray(result.details)) {
+        // Get scores and determine who is up/down
+        const team1Result = result.details.find(t => t.teamId === team1.id);
+        const team2Result = result.details.find(t => t.teamId === team2.id);
+        
+        if (team1Result && team2Result) {
+          const diff = team1Result.totalScore - team2Result.totalScore;
+          if (diff < 0) {
+            statusMessage = `${team1.name} is leading by ${Math.abs(diff)} strokes`;
+          } else if (diff > 0) {
+            statusMessage = `${team1.name} is trailing by ${diff} strokes`;
+          } else {
+            statusMessage = 'Match is tied';
+          }
+        }
+      }
+    }
+    
+    // Set the press modal info
+    setPressModalInfo({
+      statusMessage,
+      gameType
+    });
   };
   
   const handleSave = () => {
@@ -461,9 +565,10 @@ export default function ScoreInputScreen() {
           gameFormats={match.gameFormats.map(format => ({
             ...format,
             label: format.type === 'front' ? 'Front 9' : 
-                 format.type === 'back' ? 'Back 9' : 
-                 format.type === 'total' ? 'Total 18' : format.type
+                   format.type === 'back' ? 'Back 9' : 
+                   format.type === 'total' ? 'Total 18' : format.type
           }))}
+          matchStatus={pressModalInfo}
         />
       )}
     </SafeAreaView>
