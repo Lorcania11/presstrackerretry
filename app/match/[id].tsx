@@ -199,7 +199,8 @@ export default function MatchDetailScreen() {
               style={styles.pressButton} 
               onPress={handleOpenPressSummary}
             >
-              <DollarSign size={18} color="#FFFFFF" />
+              <DollarSign size={18} color="#FFFFFF" style={styles.pressButtonIcon} />
+              <Text style={styles.pressButtonText}>Press Log</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -276,12 +277,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pressButton: {
-    backgroundColor: '#FF9800',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FF9800',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    justifyContent: 'center',
+  },
+  pressButtonIcon: {
+    marginRight: 4,
+  },
+  pressButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
   },
   loadingContainer: {
     flex: 1,
