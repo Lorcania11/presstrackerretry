@@ -1,6 +1,6 @@
 // components/ScorecardScreen/PressNotification.tsx
 import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Press {
@@ -19,6 +19,7 @@ interface PressNotificationProps {
   teams: Array<{
     id: string;
     color: string;
+    name: string;
   }>;
 }
 
@@ -48,7 +49,10 @@ const PressNotification: React.FC<PressNotificationProps> = ({
   if (filteredPresses.length === 0) return null;
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
+    <View style={[
+      styles.container, 
+      { paddingBottom: insets.bottom + 10 }
+    ]}>
       {filteredPresses.map(press => {
         const fromTeam = teams.find(team => team.id === press.fromTeamId);
         const toTeam = teams.find(team => team.id === press.toTeamId);
@@ -60,11 +64,23 @@ const PressNotification: React.FC<PressNotificationProps> = ({
         return (
           <View 
             key={press.id} 
-            style={[styles.notification, { borderColor: fromTeam.color }]}
+            style={[
+              styles.notification, 
+              { borderColor: fromTeam.color },
+              // Add iOS-specific styling
+              Platform.OS === 'ios' && styles.iosNotification
+            ]}
+            accessibilityLabel={`New press from ${fromTeam.name} to ${toTeam.name} on hole ${holeNumber}`}
+            accessible={true}
           >
-            <View style={[styles.indicator, { backgroundColor: fromTeam.color }]} />
+            <View style={[
+              styles.indicator, 
+              { backgroundColor: fromTeam.color },
+              // Make indicators more visible on iOS
+              Platform.OS === 'ios' && { width: 10, height: 10, borderRadius: 5 }
+            ]} />
             <Text style={styles.notificationText}>
-              New Press on Hole {holeNumber}
+              {fromTeam.name} pressed {toTeam.name} on hole {holeNumber}
             </Text>
           </View>
         );
@@ -82,6 +98,7 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     gap: 8,
+    zIndex: 100, // Ensure notifications are on top
   },
   notification: {
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -100,6 +117,16 @@ const styles = StyleSheet.create({
     elevation: 3,
     borderWidth: 1,
     borderColor: '#cccccc',
+    maxWidth: '90%', // Limit width for better readability on iOS
+  },
+  iosNotification: {
+    // iOS-specific enhancements
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    borderWidth: Platform.OS === 'ios' ? 0.5 : 1, // Thinner border on iOS
+    paddingVertical: 10, // Slightly more padding for iOS
+    // Blend mode for transparency effect that works well on iOS
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.95)'
   },
   indicator: {
     width: 8,

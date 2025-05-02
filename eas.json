@@ -9,18 +9,29 @@
         "distribution": "internal"
       },
       "preview": {
-        "distribution": "internal"
+        "distribution": "internal",
+        "ios": {
+          "resourceClass": "m1-medium"
+        }
       },
       "production": {
         "android": {
           "buildType": "app-bundle"
         },
         "ios": {
-          "simulator": true
+          "resourceClass": "m1-medium",
+          "simulator": false,
+          "distribution": "store"
         }
       }
     },
     "submit": {
-      "production": {}
+      "production": {
+        "ios": {
+          "appleId": "${APPLE_ID}",
+          "ascAppId": "${APPLE_APP_ID}",
+          "appleTeamId": "${APPLE_TEAM_ID}"
+        }
+      }
     }
   }

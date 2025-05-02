@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "presstracker",
+    "name": "Press Tracker",
     "slug": "presstracker",
     "version": "1.0.2",
     "icon": "./assets/images/icon.png",
@@ -13,13 +13,16 @@
       "bundleIdentifier": "com.lorcania.presstracker",
       "buildNumber": "1.0.2",
       "supportsTablet": true,
+      "requireFullScreen": false,
       "infoPlist": {
         "UIBackgroundModes": [],
         "UIViewControllerBasedStatusBarAppearance": true,
         "UIStatusBarStyle": "UIStatusBarStyleDefault",
         "NSLocationWhenInUseUsageDescription": "This app does not use your location.",
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIUserInterfaceStyle": "Light"
+      },
+      "appStoreUrl": "https://apps.apple.com/app/presstracker/id123456789"
     },
     "assetBundlePatterns": [
       "**/*"

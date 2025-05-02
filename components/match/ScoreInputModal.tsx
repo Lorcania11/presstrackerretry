@@ -1,19 +1,20 @@
 // components/match/ScoreInputModal.tsx
-import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  Modal, 
-  TouchableOpacity, 
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
   TextInput,
   Platform,
-  useColorScheme,
-  ScrollView,
   KeyboardAvoidingView,
+  ScrollView,
+  Keyboard,
+  useColorScheme,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ScoreInputModalProps {
   visible: boolean;
@@ -47,6 +48,24 @@ export default function ScoreInputModal({
   }, {} as { [teamId: string]: string });
   
   const [scoreInputs, setScoreInputs] = useState<{ [teamId: string]: string }>(initialScores);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+  // Keyboard listeners for iOS
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
   
   const handleScoreChange = (teamId: string, value: string) => {
     // Only allow numeric input
@@ -73,49 +92,54 @@ export default function ScoreInputModal({
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'overFullScreen'}
     >
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
+        style={styles.container}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
-        <View 
-          style={[
-            styles.container, 
-            { 
-              backgroundColor: isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)',
-              paddingTop: insets.top,
-              paddingBottom: insets.bottom,
-              paddingLeft: insets.left,
-              paddingRight: insets.right
-            }
-          ]}
+        <TouchableOpacity 
+          style={styles.container} 
+          activeOpacity={1} 
+          onPress={Keyboard.dismiss}
         >
-          <View style={[styles.modal, { backgroundColor: isDark ? '#1E1E1E' : '#FFFFFF' }]}>
+          <View style={[
+            styles.modal, 
+            { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' },
+            keyboardVisible && Platform.OS === 'ios' && { maxHeight: '60%' }
+          ]}>
             <View style={styles.header}>
-              <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#333333' }]}>
-                Enter Scores - Hole {currentHole}
+              <Text style={[
+                styles.title, 
+                { color: isDark ? '#FFFFFF' : '#000000' }
+              ]}>
+                Hole {currentHole} Scores
               </Text>
               <TouchableOpacity 
-                onPress={onClose} 
-                style={styles.closeButton}
-                hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                style={styles.closeButton} 
+                onPress={onClose}
+                accessibilityLabel="Close score input"
               >
-                <X size={24} color={isDark ? '#FFFFFF' : '#333333'} />
+                <X size={24} color={isDark ? '#FFFFFF' : '#000000'} />
               </TouchableOpacity>
             </View>
             
             <ScrollView 
               style={styles.content}
-              contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 20 : 0 }}
               showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
             >
-              {teams.map(team => (
+              {teams.map((team) => (
                 <View key={team.id} style={styles.teamRow}>
                   <View style={styles.teamInfo}>
                     <View style={[styles.teamCircle, { backgroundColor: team.color }]}>
                       <Text style={styles.teamInitial}>{team.initial}</Text>
                     </View>
-                    <Text style={[styles.teamName, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                    <Text style={[
+                      styles.teamName,
+                      { color: isDark ? '#FFFFFF' : '#333333' }
+                    ]}>
                       {team.name}
                     </Text>
                   </View>
@@ -124,41 +148,60 @@ export default function ScoreInputModal({
                     style={[
                       styles.scoreInput,
                       { 
-                        backgroundColor: isDark ? '#333333' : '#F5F5F5',
-                        color: isDark ? '#FFFFFF' : '#333333',
                         borderColor: isDark ? '#444444' : '#DDDDDD',
+                        backgroundColor: isDark ? '#2C2C2E' : '#F5F5F5',
+                        color: isDark ? '#FFFFFF' : '#333333'
                       }
                     ]}
-                    keyboardType="numeric"
+                    keyboardType="number-pad"
                     maxLength={2}
                     value={scoreInputs[team.id]}
                     onChangeText={(value) => handleScoreChange(team.id, value)}
                     placeholder="0"
-                    placeholderTextColor={isDark ? '#888888' : '#999999'}
+                    placeholderTextColor={isDark ? '#777777' : '#999999'}
+                    selectionColor={team.color}
+                    autoCorrect={false}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
                   />
                 </View>
               ))}
             </ScrollView>
             
             <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={[styles.button, styles.cancelButton, { borderColor: isDark ? '#444444' : '#DDDDDD' }]} 
+              <TouchableOpacity
+                style={[
+                  styles.button, 
+                  styles.cancelButton,
+                  { borderColor: isDark ? '#555555' : '#DDDDDD' }
+                ]}
                 onPress={onClose}
+                accessibilityLabel="Cancel score entry"
               >
-                <Text style={[styles.buttonText, { color: isDark ? '#FFFFFF' : '#333333' }]}>
+                <Text style={[
+                  styles.buttonText,
+                  { color: isDark ? '#FFFFFF' : '#333333' }
+                ]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
               
-              <TouchableOpacity 
-                style={[styles.button, styles.saveButton]} 
+              <TouchableOpacity
+                style={[
+                  styles.button, 
+                  styles.saveButton,
+                  { backgroundColor: '#007AFF' }
+                ]}
                 onPress={handleSave}
+                accessibilityLabel="Save scores"
               >
-                <Text style={styles.saveButtonText}>Save Scores</Text>
+                <Text style={styles.saveButtonText}>
+                  Save
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </TouchableOpacity>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -169,6 +212,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modal: {
     width: '90%',

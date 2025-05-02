@@ -1,17 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, ChevronDown, ChevronUp, DollarSign } from 'lucide-react-native';
-import { calculatePressResults, formatGameType } from '@/utils/helpers';
+import { ChevronDown, ChevronUp, X, DollarSign } from 'lucide-react-native';
+import Modal from 'react-native-modal';
 
 interface PressSummaryModalProps {
   isVisible: boolean;
@@ -85,305 +76,380 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
     back9: true,
     total18: true,
   });
-  
-  const [groupedPresses, setGroupedPresses] = useState<GroupedPresses>({
-    front9: [],
-    back9: [],
-    total18: [],
-  });
-  
-  useEffect(() => {
-    if (isVisible && match) {
-      calculateAllPresses();
-    }
-  }, [
-    isVisible, 
-    match?.presses?.length, 
-    match?.holes, 
-    match?.id 
-  ]);
-  
-  const calculateAllPresses = () => {
-    if (!match || !match.presses || match.presses.length === 0) {
-      setGroupedPresses({
-        front9: [],
-        back9: [],
-        total18: [],
-      });
-      return;
-    }
 
-    const teams = match.teams.map(team => ({
-      id: team.id,
-      name: team.name,
-      color: teamColors[team.id] || team.color || '#CCCCCC',
-      scores: match.holes.map(hole => {
-        const scoreEntry = hole.scores.find(s => s.teamId === team.id);
-        return scoreEntry?.score !== undefined ? scoreEntry.score : null;
-      })
-    }));
-    
-    // Make sure each hole has a presses array to match the Hole interface
-    const holesWithPresses = match.holes.map(hole => ({
-      ...hole,
-      presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
-    }));
-    
-    const hasCompletedHoles = match.holes.some(hole => hole.isComplete);
-    
-    if (!hasCompletedHoles) {
-      setGroupedPresses({
-        front9: [],
-        back9: [],
-        total18: [],
-      });
-      return;
-    }
-    
-    // Process each press individually to ensure all are displayed
-    const processedPresses = match.presses.map(press => {
-      // Find which hole this press started on
-      const pressHole = match.holes.find(h => h.number - 1 === press.holeIndex);
-      const holeStarted = pressHole?.number || 1;
-      
-      // Create a temporary array with just this one press
-      const singlePressHoles = holesWithPresses.map(hole => ({
-        ...hole,
-        // Only include this specific press in the hole's presses
-        presses: hole.number === holeStarted ? [press] : []
-      }));
-      
-      // Calculate results for just this press
-      const results = calculatePressResults(teams, singlePressHoles, match.playFormat);
-      return results.length > 0 ? results[0] : null;
-    }).filter(Boolean); // Remove any null results
-    
-    const getBetAmount = (pressType: string): number => {
-      const gameFormat = match.gameFormats.find(format => {
-        if (pressType === 'front9' && format.type === 'front') return true;
-        if (pressType === 'back9' && format.type === 'back') return true;
-        if (pressType === 'total18' && format.type === 'total') return true;
-        return false;
-      });
-      return gameFormat?.betAmount || 10;
-    };
-    
-    const groupedResults: GroupedPresses = {
-      front9: [],
-      back9: [],
-      total18: [],
-    };
-    
-    processedPresses.forEach(press => {
-      if (!press) return;
-      
-      const fromTeam = match.teams.find(team => team.id === press.fromTeamId);
-      const toTeam = match.teams.find(team => team.id === press.toTeamId);
-      
-      if (!fromTeam || !toTeam) return;
-      
-      const pressWithDetails: PressWithResults = {
-        ...press,
-        fromTeamName: fromTeam.name,
-        fromTeamColor: teamColors[(match.teams.findIndex(t => t.id === fromTeam.id) + 1).toString()] || fromTeam.color || '#CCCCCC',
-        toTeamName: toTeam.name,
-        toTeamColor: teamColors[(match.teams.findIndex(t => t.id === toTeam.id) + 1).toString()] || toTeam.color || '#CCCCCC',
-        amount: getBetAmount(press.pressType),
-        holeNumber: press.holeIndex + 1,
-        isOriginalBet: press.isOriginalBet,
-      };
-      
-      if (press.pressType === 'front9') {
-        groupedResults.front9.push(pressWithDetails);
-      } else if (press.pressType === 'back9') {
-        groupedResults.back9.push(pressWithDetails);
-      } else if (press.pressType === 'total18') {
-        groupedResults.total18.push(pressWithDetails);
-      }
-    });
-    
-    // Sort presses so original bets come first, then by hole number
-    Object.keys(groupedResults).forEach(key => {
-      const groupKey = key as keyof GroupedPresses;
-      groupedResults[groupKey].sort((a, b) => {
-        if (a.isOriginalBet && !b.isOriginalBet) return -1;
-        if (!a.isOriginalBet && b.isOriginalBet) return 1;
-        return a.holeNumber - b.holeNumber;
-      });
-    });
-    
-    setGroupedPresses(groupedResults);
-  };
-  
+  // Process presses to group them by type and calculate results
+  const processedPresses = processPressesWithResults(match, teamColors);
+
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
-  
-  const renderPressItem = (press: PressWithResults) => {
-    const winningTeamId = press.winner;
-    const winningTeam = winningTeamId 
-      ? match.teams.find(team => team.id === winningTeamId)
-      : null;
-      
-    const winningTeamName = winningTeam?.name || 'Tied';
-    const isComplete = press.status.includes('wins');
-    const statusColor = isComplete ? '#4CAF50' : '#FF9800';
+
+  return (
+    <Modal
+      isVisible={isVisible}
+      style={styles.modalContainer}
+      backdropOpacity={0.5}
+      onBackdropPress={onClose}
+      onBackButtonPress={onClose}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      swipeDirection="down"
+      onSwipeComplete={onClose}
+      propagateSwipe={true}
+      avoidKeyboard={true}
+      useNativeDriver={true}
+      statusBarTranslucent
+    >
+      <View style={[
+        styles.container, 
+        { paddingTop: insets.top || 10, paddingBottom: insets.bottom || 10 }
+      ]}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Press Summary</Text>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityLabel="Close press summary">
+            <X size={24} color="#333333" />
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView 
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Front 9 Section */}
+          {processedPresses.front9.length > 0 && (
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.sectionHeader}
+                onPress={() => toggleSection('front9')}
+                accessibilityLabel={expandedSections.front9 ? "Collapse Front 9" : "Expand Front 9"}
+                accessibilityRole="button"
+              >
+                <Text style={styles.sectionTitle}>Front 9</Text>
+                {expandedSections.front9 ? 
+                  <ChevronUp size={20} color="#333333" /> : 
+                  <ChevronDown size={20} color="#333333" />
+                }
+              </TouchableOpacity>
+              
+              {expandedSections.front9 && (
+                <View style={styles.sectionContent}>
+                  {processedPresses.front9.map((press) => renderPressItem(press))}
+                </View>
+              )}
+            </View>
+          )}
+          
+          {/* Back 9 Section */}
+          {processedPresses.back9.length > 0 && (
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.sectionHeader}
+                onPress={() => toggleSection('back9')}
+                accessibilityLabel={expandedSections.back9 ? "Collapse Back 9" : "Expand Back 9"}
+                accessibilityRole="button"
+              >
+                <Text style={styles.sectionTitle}>Back 9</Text>
+                {expandedSections.back9 ? 
+                  <ChevronUp size={20} color="#333333" /> : 
+                  <ChevronDown size={20} color="#333333" />
+                }
+              </TouchableOpacity>
+              
+              {expandedSections.back9 && (
+                <View style={styles.sectionContent}>
+                  {processedPresses.back9.map((press) => renderPressItem(press))}
+                </View>
+              )}
+            </View>
+          )}
+          
+          {/* Total 18 Section */}
+          {processedPresses.total18.length > 0 && (
+            <View style={styles.section}>
+              <TouchableOpacity 
+                style={styles.sectionHeader}
+                onPress={() => toggleSection('total18')}
+                accessibilityLabel={expandedSections.total18 ? "Collapse Total 18" : "Expand Total 18"}
+                accessibilityRole="button"
+              >
+                <Text style={styles.sectionTitle}>Total 18</Text>
+                {expandedSections.total18 ? 
+                  <ChevronUp size={20} color="#333333" /> : 
+                  <ChevronDown size={20} color="#333333" />
+                }
+              </TouchableOpacity>
+              
+              {expandedSections.total18 && (
+                <View style={styles.sectionContent}>
+                  {processedPresses.total18.map((press) => renderPressItem(press))}
+                </View>
+              )}
+            </View>
+          )}
+          
+          {/* Show message if no presses */}
+          {processedPresses.front9.length === 0 && 
+           processedPresses.back9.length === 0 && 
+           processedPresses.total18.length === 0 && (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.noPressesText}>No presses found for this match</Text>
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+
+  function renderPressItem(press: PressWithResults) {
+    const isWinner = !!press.winner;
+    let statusColor = '#FF9800'; // Default (in progress)
+    let winnerBorderColor = '#007AFF'; // Default
     
-    // Determine the hole range for this press
-    const getPressRange = (press: PressWithResults): string => {
-      const { pressType, holeNumber, isOriginalBet } = press;
-      
-      if (isOriginalBet) {
-        if (pressType === 'front9') {
-          return 'Original Bet: Front 9 (Holes 1-9)';
-        } else if (pressType === 'back9') {
-          return 'Original Bet: Back 9 (Holes 10-18)';
-        } else if (pressType === 'total18') {
-          return 'Original Bet: Total Game (Holes 1-18)';
-        }
-      }
-      
-      if (pressType === 'front9') {
-        return `Press: Holes ${holeNumber}-9`;
-      } else if (pressType === 'back9') {
-        return `Press: Holes ${holeNumber}-18`;
-      } else if (pressType === 'total18') {
-        // Differentiate between presses on front 9 and back 9
-        if (holeNumber >= 1 && holeNumber <= 9) {
-          return `Press: Holes ${holeNumber}-18 (Total)`;
-        } else {
-          return `Press: Holes ${holeNumber}-18 (Back 9)`;
-        }
-      }
-      
-      return `Started hole ${holeNumber}`;
-    };
+    if (press.status === 'completed') {
+      statusColor = press.winner === 'tie' ? '#888888' : '#4CAF50';
+    }
+    
+    if (press.winner === press.fromTeamId) {
+      winnerBorderColor = press.fromTeamColor;
+    } else if (press.winner === press.toTeamId) {
+      winnerBorderColor = press.toTeamColor;
+    }
     
     return (
-      <View key={press.id} style={[
-        styles.pressItem, 
-        press.isOriginalBet && styles.originalBetItem
-      ]}>
+      <View 
+        key={press.id} 
+        style={[
+          styles.pressItem,
+          press.isOriginalBet && styles.originalBetItem
+        ]}
+      >
         <View style={styles.pressHeader}>
           <View style={styles.teamContainer}>
-            <View style={[styles.teamIndicator, { backgroundColor: press.fromTeamColor }]} />
+            <View 
+              style={[
+                styles.teamIndicator, 
+                { backgroundColor: press.fromTeamColor }
+              ]} 
+            />
             <Text style={styles.teamName}>{press.fromTeamName}</Text>
             <Text style={styles.pressingText}>pressing</Text>
-            <View style={[styles.teamIndicator, { backgroundColor: press.toTeamColor }]} />
+            
+            <View 
+              style={[
+                styles.teamIndicator, 
+                { backgroundColor: press.toTeamColor }
+              ]} 
+            />
             <Text style={styles.teamName}>{press.toTeamName}</Text>
           </View>
           
           <View style={styles.betAmount}>
-            <DollarSign size={14} color="#666666" />
+            <DollarSign size={14} color="#333333" />
             <Text style={styles.betAmountText}>{press.amount}</Text>
           </View>
         </View>
         
         <View style={styles.pressDetails}>
           <Text style={styles.pressStarted}>
-            {getPressRange(press)}
+            Started on hole {press.holeNumber}
           </Text>
+          
           <Text style={[styles.pressStatus, { color: statusColor }]}>
-            {press.status}
+            {press.status === 'in-progress' ? 'In Progress' : 
+             press.status === 'completed' && press.winner === 'tie' ? 'Tied' : 
+             'Completed'}
           </Text>
         </View>
         
-        {isComplete && winningTeamId && (
-          <View style={[styles.winnerContainer, { borderColor: statusColor }]}>
-            <Text style={[styles.winnerText, { color: statusColor }]}>
-              {winningTeamName} wins ${press.amount}
+        {isWinner && press.winner !== 'tie' && (
+          <View 
+            style={[
+              styles.winnerContainer, 
+              { 
+                borderColor: winnerBorderColor,
+                backgroundColor: Platform.OS === 'ios' ? `${winnerBorderColor}10` : 'rgba(255,255,255,0.7)'
+              }
+            ]}
+          >
+            <Text 
+              style={[
+                styles.winnerText, 
+                { color: winnerBorderColor }
+              ]}
+            >
+              {press.winner === press.fromTeamId ? press.fromTeamName : press.toTeamName} won
+            </Text>
+          </View>
+        )}
+        
+        {isWinner && press.winner === 'tie' && (
+          <View 
+            style={[
+              styles.winnerContainer, 
+              { 
+                borderColor: '#888888',
+                backgroundColor: Platform.OS === 'ios' ? 'rgba(136,136,136,0.1)' : 'rgba(255,255,255,0.7)'
+              }
+            ]}
+          >
+            <Text style={[styles.winnerText, { color: '#888888' }]}>
+              Tie - No winner
             </Text>
           </View>
         )}
       </View>
     );
-  };
-  
-  const renderSection = (title: string, presses: PressWithResults[], sectionKey: string) => {
-    const isExpanded = expandedSections[sectionKey];
-    
-    return (
-      <View style={styles.section}>
-        <TouchableOpacity 
-          style={styles.sectionHeader} 
-          onPress={() => toggleSection(sectionKey)}
-        >
-          <Text style={styles.sectionTitle}>{title}</Text>
-          {isExpanded ? (
-            <ChevronUp size={20} color="#333333" />
-          ) : (
-            <ChevronDown size={20} color="#333333" />
-          )}
-        </TouchableOpacity>
-        
-        {isExpanded && (
-          <View style={styles.sectionContent}>
-            {presses.length === 0 ? (
-              <Text style={styles.noPressesText}>No presses for {title}</Text>
-            ) : (
-              presses.map(press => renderPressItem(press))
-            )}
-          </View>
-        )}
-      </View>
-    );
-  };
-  
-  return (
-    <Modal
-      visible={isVisible}
-      animationType="slide"
-      transparent={false}
-    >
-      <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
-        <View 
-          style={[
-            styles.header, 
-            { 
-              paddingLeft: Math.max(16, insets.left),
-              paddingRight: Math.max(16, insets.right),
-              paddingTop: Platform.OS === 'ios' ? insets.top > 0 ? 0 : 12 : 12
-            }
-          ]}
-        >
-          <Text style={styles.title}>Press Summary</Text>
-          <TouchableOpacity 
-            style={styles.closeButton} 
-            onPress={onClose}
-            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-          >
-            <X size={24} color="#333333" />
-          </TouchableOpacity>
-        </View>
-        
-        <ScrollView 
-          style={[
-            styles.content, 
-            {
-              paddingLeft: Math.max(16, insets.left),
-              paddingRight: Math.max(16, insets.right)
-            }
-          ]}
-          contentContainerStyle={{
-            paddingBottom: Platform.OS === 'ios' ? 20 : 16
-          }}
-        >
-          {renderSection('Front 9 Presses', groupedPresses.front9, 'front9')}
-          {renderSection('Back 9 Presses', groupedPresses.back9, 'back9')}
-          {renderSection('Total 18 Presses', groupedPresses.total18, 'total18')}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
+  }
 };
 
+// Helper function to process presses with results
+function processPressesWithResults(match: PressSummaryModalProps['match'], teamColors: Record<string, string>): GroupedPresses {
+  // Map to quickly lookup team names
+  const teamMap: Record<string, {name: string, color: string}> = {};
+  match.teams.forEach(team => {
+    teamMap[team.id] = {
+      name: team.name,
+      color: team.color || teamColors[team.id] || '#CCCCCC'
+    };
+  });
+  
+  // Find appropriate bet amount for each press type
+  const betAmounts: Record<string, number> = {};
+  match.gameFormats.forEach(format => {
+    if (format.type === 'front' || format.type === 'front9') {
+      betAmounts['front9'] = format.betAmount;
+    } else if (format.type === 'back' || format.type === 'back9') {
+      betAmounts['back9'] = format.betAmount;
+    } else if (format.type === 'total' || format.type === 'total18') {
+      betAmounts['total18'] = format.betAmount;
+    }
+  });
+  
+  // Group and process presses
+  const groupedPresses: GroupedPresses = {
+    front9: [],
+    back9: [],
+    total18: []
+  };
+  
+  match.presses.forEach(press => {
+    // Skip presses without valid teams
+    if (!teamMap[press.fromTeamId] || !teamMap[press.toTeamId]) return;
+    
+    // Process press details
+    const normalizedPressType = press.pressType.includes('front') ? 'front9' : 
+                               press.pressType.includes('back') ? 'back9' : 'total18';
+    
+    const holeNumber = press.holeIndex + 1;
+    
+    // Determine press status and winner
+    let status = 'in-progress';
+    let winner = null;
+    
+    // Logic to determine winner based on press type and hole completion
+    // For actual implementation, you'd need more complex logic based on rules
+    // This is a simplified version
+    
+    // Example simplified evaluation (would need to be expanded with actual golf rules)
+    if (normalizedPressType === 'front9' && holeNumber <= 9 && 
+        match.holes[8]?.isComplete) {
+      status = 'completed';
+      // Simple logic to determine winner (to be replaced with actual rules)
+      winner = determineWinner(press, match, 0, 8);
+    } else if (normalizedPressType === 'back9' && holeNumber >= 10 && 
+              match.holes[17]?.isComplete) {
+      status = 'completed';
+      winner = determineWinner(press, match, 9, 17);
+    } else if (normalizedPressType === 'total18' && 
+              match.holes[17]?.isComplete) {
+      status = 'completed';
+      winner = determineWinner(press, match, 0, 17);
+    }
+    
+    const processedPress: PressWithResults = {
+      id: press.id,
+      fromTeamId: press.fromTeamId,
+      fromTeamName: teamMap[press.fromTeamId].name,
+      fromTeamColor: teamMap[press.fromTeamId].color,
+      toTeamId: press.toTeamId,
+      toTeamName: teamMap[press.toTeamId].name,
+      toTeamColor: teamMap[press.toTeamId].color,
+      holeIndex: press.holeIndex,
+      holeNumber,
+      pressType: normalizedPressType,
+      status,
+      winner,
+      amount: betAmounts[normalizedPressType] || 0,
+      isOriginalBet: press.isOriginalBet
+    };
+    
+    groupedPresses[normalizedPressType].push(processedPress);
+  });
+  
+  return groupedPresses;
+}
+
+// Helper function to determine winner
+function determineWinner(press: PressSummaryModalProps['match']['presses'][0],
+                        match: PressSummaryModalProps['match'],
+                        startHoleIndex: number,
+                        endHoleIndex: number): string | null {
+  let fromTeamScore = 0;
+  let toTeamScore = 0;
+  
+  // Calculate total scores for the relevant holes
+  for (let i = startHoleIndex; i <= endHoleIndex; i++) {
+    if (!match.holes[i]?.isComplete) continue;
+    
+    const fromTeamHoleScore = match.holes[i].scores.find(
+      s => s.teamId === press.fromTeamId
+    )?.score;
+    
+    const toTeamHoleScore = match.holes[i].scores.find(
+      s => s.teamId === press.toTeamId
+    )?.score;
+    
+    if (fromTeamHoleScore !== null && toTeamHoleScore !== null) {
+      fromTeamScore += fromTeamHoleScore!;
+      toTeamScore += toTeamHoleScore!;
+    }
+  }
+  
+  if (fromTeamScore < toTeamScore) {
+    return press.fromTeamId; // Lower score wins in golf
+  } else if (toTeamScore < fromTeamScore) {
+    return press.toTeamId;
+  } else {
+    return 'tie';
+  }
+}
+
 const styles = StyleSheet.create({
+  modalContainer: {
+    margin: 0,
+    justifyContent: 'flex-end',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    // Use shadow for iOS, elevation for Android
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   header: {
     flexDirection: 'row',
@@ -395,6 +461,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
     zIndex: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   title: {
     fontSize: 20,
@@ -406,17 +474,26 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 16,
+    paddingBottom: 30,
   },
   section: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
     overflow: 'hidden',
   },
   sectionHeader: {
@@ -440,9 +517,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+    // iOS specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+      }
+    }),
   },
   originalBetItem: {
-    backgroundColor: '#F0F8FF', // Light blue background to distinguish original bets
+    backgroundColor: '#F0F8FF',
     borderLeftWidth: 3,
     borderLeftColor: '#007AFF',
   },
@@ -521,6 +607,24 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 12,
+  },
+  emptyStateContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
 });
 

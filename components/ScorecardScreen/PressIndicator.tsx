@@ -51,19 +51,29 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
   if (relevantPresses.length === 0) return null;
 
   return (
-    <View style={styles.container}>
+    <View 
+      style={styles.container}
+      accessibilityLabel={`${relevantPresses.length} presses on hole ${holeNumber}`}
+      accessible={true}
+    >
       {relevantPresses.map((press, index) => {
         // Find the pressing team
         const pressingTeam = teams.find(team => team.id === press.fromTeamId);
         const dotColor = pressingTeam?.fixedColor || '#cccccc';
+        
+        // Determine if this team is pressing or being pressed
+        const isPressing = press.fromTeamId === teamId;
         
         return (
           <View 
             key={`${press.id}-${index}`} 
             style={[
               styles.indicator,
-              { backgroundColor: dotColor }
+              { backgroundColor: dotColor },
+              // Make pressing indicators slightly larger for better visibility on iOS
+              Platform.OS === 'ios' && isPressing && styles.iOsPressingIndicator
             ]}
+            accessibilityElementsHidden={true} // Hide from screen readers as parent is accessible
           />
         );
       })}
@@ -80,21 +90,37 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     maxWidth: '75%',
     justifyContent: 'flex-end',
+    // Add iOS-specific z-index to ensure indicators are on top
+    ...Platform.select({
+      ios: {
+        zIndex: 10,
+      }
+    })
   },
   indicator: {
     width: 6,
     height: 6,
     borderRadius: 3,
     margin: 1,
-    // Better rendering on iOS retina displays
+    // Better rendering on iOS retina displays with more refined shadow
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(0,0,0,0.1)',
+        shadowColor: 'rgba(0,0,0,0.2)',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.3,
         shadowRadius: 1,
       }
     }),
+  },
+  iOsPressingIndicator: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    // Even better shadow for pressing indicators to make them stand out more on iOS
+    shadowColor: 'rgba(0,0,0,0.3)',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 1.5,
   }
 });
 

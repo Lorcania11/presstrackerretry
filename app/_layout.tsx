@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MatchProvider } from '@/context/MatchContext';
+import { Platform } from 'react-native';
 
 export default function RootLayout() {
   useFrameworkReady();
@@ -17,7 +18,7 @@ export default function RootLayout() {
             name="match/[id]" 
             options={{ 
               headerShown: false,
-              presentation: 'card',
+              presentation: Platform.OS === 'ios' ? 'modal' : 'card',
               animation: 'slide_from_right',
             }} 
           />
@@ -25,12 +26,12 @@ export default function RootLayout() {
             name="match/press-log/[id]" 
             options={{ 
               headerShown: false,
-              presentation: 'card',
+              presentation: 'modal',
               animation: 'slide_from_bottom',
             }} 
           />
         </Stack>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </MatchProvider>
     </GestureHandlerRootView>
   );
