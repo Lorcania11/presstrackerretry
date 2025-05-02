@@ -104,7 +104,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     };
   });
 
-  // Make sure the pressesWithOriginalBets calculation is consistent in ScorecardFlow.tsx
+  // Ensure consistent identification of original bets
   const pressesWithOriginalBetFlags = presses.map(press => {
     // Check both hole index and press type to determine if it's an original bet
     // Original bets are:

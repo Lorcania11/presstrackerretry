@@ -35,9 +35,11 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
     if (press.isOriginalBet) return false;
     
     // Calculate the actual hole index we're looking at based on showBack9
+    // For back9 view, hole numbers are 10-18 (indices 9-17)
+    // For front9 view, hole numbers are 1-9 (indices 0-8)
     const currentHoleIndex = showBack9 
-      ? holeNumber + 9 - 1  // Adjust for back 9 view (holes 10-18)
-      : holeNumber - 1;     // Front 9 view (holes 1-9)
+      ? holeNumber - 1  // Back 9 view: convert hole number (10-18) to index (9-17)
+      : holeNumber - 1; // Front 9 view: convert hole number (1-9) to index (0-8)
     
     // Check if this press originated on this hole
     if (press.holeIndex !== currentHoleIndex) return false;
