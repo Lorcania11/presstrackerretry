@@ -34,43 +34,56 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
   
   // Find presses that originated on this hole
   const relevantPresses = presses.filter(press => {
-    // Include all presses at this hole (both original and subsequent)
-    if (press.holeIndex === currentHoleIndex) {
-      // Check if this team is involved in the press (either pressing or being pressed)
-      return press.fromTeamId === teamId || press.toTeamId === teamId;
+    // Only include presses at this hole index
+    return press.holeIndex === currentHoleIndex;
+  });
+  
+  // Group presses by team that initiated them (fromTeamId)
+  // This prevents multiple indicators for the same team pressing multiple game types
+  const pressesByTeam: Record<string, {
+    fromTeamId: string;
+    toTeamId: string;
+    color: string;
+  }> = {};
+  
+  relevantPresses.forEach(press => {
+    // Check if this team is being pressed (not doing the pressing)
+    if (press.toTeamId === teamId) {
+      // Store only one press per initiating team to avoid duplicates
+      if (!pressesByTeam[press.fromTeamId]) {
+        const pressingTeam = teams.find(team => team.id === press.fromTeamId);
+        const color = pressingTeam?.fixedColor || pressingTeam?.color || '#CCCCCC';
+        
+        pressesByTeam[press.fromTeamId] = {
+          fromTeamId: press.fromTeamId,
+          toTeamId: press.toTeamId,
+          color: color
+        };
+      }
     }
-    return false;
   });
 
-  // If no relevant presses, don't render anything
-  if (relevantPresses.length === 0) return null;
+  // If no teams are pressing this team, don't render anything
+  const pressCount = Object.keys(pressesByTeam).length;
+  if (pressCount === 0) return null;
 
   return (
     <View 
       style={styles.container}
-      accessibilityLabel={`${relevantPresses.length} presses on hole ${holeNumber}`}
+      accessibilityLabel={`${pressCount} presses on hole ${holeNumber}`}
       accessible={true}
     >
-      {relevantPresses.map((press, index) => {
-        // Get the color of the pressing team
-        const pressingTeam = teams.find(team => team.id === press.fromTeamId);
-        // Use fixedColor as first priority, then regular color, then fallback
-        const dotColor = pressingTeam?.fixedColor || pressingTeam?.color || '#CCCCCC';
-        
-        // Determine if this team is pressing or being pressed
-        const isPressing = press.fromTeamId === teamId;
-        const isBeingPressed = press.toTeamId === teamId;
-        
-        // Skip if team is not involved (shouldn't happen due to filter above)
-        if (!isPressing && !isBeingPressed) return null;
+      {Object.values(pressesByTeam).map((press, index) => {
+        // Use the color of the team that initiated the press
+        const dotColor = press.color;
         
         return (
           <View 
-            key={`${press.id}-${index}`} 
+            key={`${press.fromTeamId}-${index}`} 
             style={[
               styles.indicator,
               { backgroundColor: dotColor },
-              isPressing ? styles.pressingIndicator : styles.pressedIndicator,
+              styles.pressedIndicator,
               // iOS-specific enhancement
               Platform.OS === 'ios' && styles.iOSIndicator
             ]}
@@ -109,17 +122,11 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  pressingIndicator: {
-    width: 8, // Slightly larger for the pressing team
-    height: 8,
-    borderRadius: 4,
-    opacity: 0.9,
-  },
   pressedIndicator: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    opacity: 0.7,
+    opacity: 0.8,
   },
   iOSIndicator: {
     shadowColor: 'rgba(0,0,0,0.4)',

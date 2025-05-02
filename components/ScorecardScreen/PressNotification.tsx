@@ -31,20 +31,31 @@ const PressNotification: React.FC<PressNotificationProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  // Only show notifications for non-original bet presses
-  const filteredPresses = presses.filter(press => {
-    // Filter out original bets - we don't want notifications for these
-    if (press.isOriginalBet) return false;
+  // Group presses by hole index and team combinations to avoid duplicates
+  const uniquePresses = new Map<string, Press>();
+  
+  // Process presses to remove duplicates for the same hole and team combination
+  presses.forEach(press => {
+    // Skip original bets
+    if (press.isOriginalBet) return;
     
-    // Show relevant presses based on current view (front9 or back9)
-    if (showBack9) {
-      // For back9 view, only show presses on holes 10-18 (indices 9-17)
-      return press.holeIndex >= 9 && press.holeIndex <= 17;
-    } else {
-      // For front9 view, only show presses on holes 1-9 (indices 0-8)
-      return press.holeIndex >= 0 && press.holeIndex <= 8;
+    // Check if press is relevant to current view (front9 or back9)
+    const isRelevantToView = showBack9 
+      ? (press.holeIndex >= 9 && press.holeIndex <= 17)
+      : (press.holeIndex >= 0 && press.holeIndex <= 8);
+      
+    if (!isRelevantToView) return;
+    
+    // Create a unique key for this press based on hole index and teams involved
+    const uniqueKey = `${press.holeIndex}-${press.fromTeamId}-${press.toTeamId}`;
+    
+    // Only store one press per unique key
+    if (!uniquePresses.has(uniqueKey)) {
+      uniquePresses.set(uniqueKey, press);
     }
   });
+
+  const filteredPresses = Array.from(uniquePresses.values());
 
   if (filteredPresses.length === 0) return null;
 
