@@ -198,6 +198,7 @@ export default function MatchDetailScreen() {
             <TouchableOpacity 
               style={styles.pressButton} 
               onPress={handleOpenPressSummary}
+              accessibilityLabel="View press summary"
             >
               <DollarSign size={18} color="#FFFFFF" style={styles.pressButtonIcon} />
               <Text style={styles.pressButtonText}>Press Log</Text>
@@ -284,6 +285,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     justifyContent: 'center',
+    // iOS-specific shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   pressButtonIcon: {
     marginRight: 4,

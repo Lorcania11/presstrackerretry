@@ -47,7 +47,7 @@ const PressNotification: React.FC<PressNotificationProps> = ({
     if (!isRelevantToView) return;
     
     // Create a unique key for this press based on hole index and teams involved
-    const uniqueKey = `${press.holeIndex}-${press.fromTeamId}-${press.toTeamId}`;
+    const uniqueKey = `${press.holeIndex}-${press.fromTeamId}-${press.toTeamId}-${press.pressType}`;
     
     // Only store one press per unique key
     if (!uniquePresses.has(uniqueKey)) {
@@ -71,6 +71,9 @@ const PressNotification: React.FC<PressNotificationProps> = ({
         if (!fromTeam || !toTeam) return null;
         
         const holeNumber = press.holeIndex + 1;
+        const pressTypeLabel = press.pressType === 'front9' ? 'Front 9' : 
+                              press.pressType === 'back9' ? 'Back 9' : 
+                              press.pressType === 'total18' ? 'Total 18' : press.pressType;
         
         return (
           <View 
@@ -91,7 +94,7 @@ const PressNotification: React.FC<PressNotificationProps> = ({
               Platform.OS === 'ios' && { width: 10, height: 10, borderRadius: 5 }
             ]} />
             <Text style={styles.notificationText}>
-              {fromTeam.name} pressed {toTeam.name} on hole {holeNumber}
+              {fromTeam.name} pressed {toTeam.name} on hole {holeNumber} ({pressTypeLabel})
             </Text>
           </View>
         );
@@ -129,6 +132,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#cccccc',
     maxWidth: '90%', // Limit width for better readability on iOS
+    marginBottom: 8, // Add space between multiple notifications
   },
   iosNotification: {
     // iOS-specific enhancements

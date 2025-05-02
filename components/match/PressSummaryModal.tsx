@@ -110,7 +110,12 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       ]}>
         <View style={styles.header}>
           <Text style={styles.title}>Press Summary</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityLabel="Close press summary">
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={onClose}
+            accessibilityLabel="Close press summary"
+            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }} // Improve touch target
+          >
             <X size={24} color="#333333" />
           </TouchableOpacity>
         </View>
