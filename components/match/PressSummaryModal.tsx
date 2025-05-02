@@ -343,10 +343,11 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
 function processPressesWithResults(match: PressSummaryModalProps['match'], teamColors: Record<string, string>): GroupedPresses {
   // Map to quickly lookup team names
   const teamMap: Record<string, {name: string, color: string}> = {};
-  match.teams.forEach(team => {
+  match.teams.forEach((team, index) => {
+    const teamNumber = (index + 1).toString();
     teamMap[team.id] = {
       name: team.name,
-      color: team.color || teamColors[team.id] || '#CCCCCC'
+      color: teamColors[teamNumber] || team.color || '#CCCCCC'
     };
   });
   
@@ -373,9 +374,18 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
     // Skip presses without valid teams
     if (!teamMap[press.fromTeamId] || !teamMap[press.toTeamId]) return;
     
-    // Process press details
-    const normalizedPressType = press.pressType.includes('front') ? 'front9' : 
-                               press.pressType.includes('back') ? 'back9' : 'total18';
+    // Process press details - ensure each pressType is properly normalized
+    let normalizedPressType: string;
+    if (press.pressType.includes('front')) {
+      normalizedPressType = 'front9';
+    } else if (press.pressType.includes('back')) {
+      normalizedPressType = 'back9';
+    } else if (press.pressType.includes('total')) {
+      normalizedPressType = 'total18';
+    } else {
+      // If pressType doesn't match known types, use it as is
+      normalizedPressType = press.pressType;
+    }
     
     const holeNumber = press.holeIndex + 1;
     
@@ -464,6 +474,7 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
       id: press.id,
       fromTeamId: press.fromTeamId,
       fromTeamName: teamMap[press.fromTeamId].name,
+      // Use consistent team colors from the teamMap
       fromTeamColor: teamMap[press.fromTeamId].color,
       toTeamId: press.toTeamId,
       toTeamName: teamMap[press.toTeamId].name,
@@ -478,7 +489,14 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
       netResult
     };
     
-    groupedPresses[normalizedPressType].push(processedPress);
+    // Add to the appropriate group - ensure we keep all press types
+    if (normalizedPressType === 'front9') {
+      groupedPresses.front9.push(processedPress);
+    } else if (normalizedPressType === 'back9') {
+      groupedPresses.back9.push(processedPress);
+    } else {
+      groupedPresses.total18.push(processedPress);
+    }
   });
   
   return groupedPresses;

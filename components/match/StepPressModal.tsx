@@ -150,6 +150,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       return;
     }
 
+    // Create a separate press for each selected game type
     const newPresses = selectedGameTypes.map(gameType => ({
       fromTeamId,
       toTeamId,
@@ -157,12 +158,15 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       holeIndex: hole.number - 1
     }));
 
+    // Add all new presses to the array
     setAddedPresses([...addedPresses, ...newPresses]);
 
+    // Reset selection state
     setFromTeamId(null);
     setToTeamId(null);
     setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
 
+    // Show confirmation after adding presses
     setShowConfirmation(true);
   };
 

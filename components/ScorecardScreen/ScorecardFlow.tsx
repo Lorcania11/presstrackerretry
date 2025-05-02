@@ -117,6 +117,27 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     };
   });
 
+  // Identify and flag original bets correctly based on their hole indices
+  const pressesWithOriginalBets = presses.map(press => {
+    // Check both hole index and press type to determine if it's an original bet
+    // Support multiple formats of press type naming
+    const frontPressTypes = ['front9', 'front'];
+    const backPressTypes = ['back9', 'back'];
+    const totalPressTypes = ['total18', 'total'];
+    
+    if ((press.holeIndex === 0 && 
+         (frontPressTypes.includes(press.pressType) || 
+          totalPressTypes.includes(press.pressType))) ||
+        (press.holeIndex === 9 && 
+         backPressTypes.includes(press.pressType))) {
+      return {
+        ...press,
+        isOriginalBet: true
+      };
+    }
+    return press;
+  });
+
   // Create a mock match object for the press summary modal
   const mockMatch = {
     id: matchId,
@@ -127,7 +148,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       initial: team.initial,
       color: team.fixedColor,
     })),
-    presses: presses,
+    presses: pressesWithOriginalBets, // Use the array with properly flagged bets
     holes: Array(18).fill(0).map((_, i) => ({
       number: i + 1,
       scores: teamsWithFixedColors.map(team => ({
@@ -144,19 +165,6 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       { type: 'total', betAmount: 10 },
     ],
   };
-
-  // Identify and flag original bets correctly based on their hole indices
-  const pressesWithOriginalBets = presses.map(press => {
-    // Check both hole index and press type to determine if it's an original bet
-    if ((press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
-        (press.holeIndex === 9 && press.pressType === 'back9')) {
-      return {
-        ...press,
-        isOriginalBet: true
-      };
-    }
-    return press;
-  });
 
   return (
     <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>

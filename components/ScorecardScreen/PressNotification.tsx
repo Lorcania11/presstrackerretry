@@ -46,7 +46,7 @@ const PressNotification: React.FC<PressNotificationProps> = ({
       
     if (!isRelevantToView) return;
     
-    // Create a unique key for this press based on hole index and teams involved
+    // Create a unique key for this press based on hole index, teams involved, and press type
     const uniqueKey = `${press.holeIndex}-${press.fromTeamId}-${press.toTeamId}-${press.pressType}`;
     
     // Only store one press per unique key
@@ -71,10 +71,14 @@ const PressNotification: React.FC<PressNotificationProps> = ({
         if (!fromTeam || !toTeam) return null;
         
         const holeNumber = press.holeIndex + 1;
-        const pressTypeLabel = press.pressType === 'front9' ? 'Front 9' : 
-                              press.pressType === 'back9' ? 'Back 9' : 
-                              press.pressType === 'total18' ? 'Total 18' : press.pressType;
-        
+        const pressTypeLabel = (() => {
+          const type = press.pressType;
+          if (type === 'front9' || type === 'front') return 'Front 9';
+          if (type === 'back9' || type === 'back') return 'Back 9';
+          if (type === 'total18' || type === 'total') return 'Total 18';
+          return type;
+        })();
+
         return (
           <View 
             key={press.id} 

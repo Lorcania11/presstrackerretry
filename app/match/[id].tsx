@@ -103,11 +103,17 @@ export default function MatchDetailScreen() {
       // Transform the match to fit our MatchDetail interface
       const matchDetail: MatchDetail = {
         ...loadedMatch,
-        teams: loadedMatch.teams.map(team => ({
-          ...team,
-          initial: team.initial || team.name.charAt(0).toUpperCase(),
-          color: team.color || '#CCCCCC'
-        }))
+        teams: loadedMatch.teams.map((team, index) => {
+          // Assign consistent color based on team index
+          const teamNumber = (index + 1).toString();
+          const teamColor = FIXED_TEAM_COLORS[teamNumber] || team.color || '#CCCCCC';
+          
+          return {
+            ...team,
+            initial: team.initial || team.name.charAt(0).toUpperCase(),
+            color: teamColor
+          };
+        })
       };
       
       setMatch(matchDetail);

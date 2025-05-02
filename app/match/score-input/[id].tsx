@@ -367,6 +367,9 @@ export default function ScoreInputScreen() {
       presses: [...match.presses, newPress],
     };
     
+    console.log("Adding new press:", newPress);
+    console.log("Updated presses:", updatedMatch.presses);
+    
     setMatch(updatedMatch);
     updateMatch(updatedMatch);
     
@@ -541,8 +544,14 @@ export default function ScoreInputScreen() {
               ...press,
               // Original bets start on hole 1 (holeIndex 0) for front9 and total18,
               // or on hole 10 (holeIndex 9) for back9
-              isOriginalBet: (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
-                             (press.holeIndex === 9 && press.pressType === 'back9')
+              isOriginalBet: (press.holeIndex === 0 && 
+                (press.pressType === 'front9' || 
+                 press.pressType === 'front' || 
+                 press.pressType === 'total18' || 
+                 press.pressType === 'total')) ||
+              (press.holeIndex === 9 && 
+                (press.pressType === 'back9' || 
+                 press.pressType === 'back'))
             })),
             holes: match.holes.map(hole => ({
               ...hole,
