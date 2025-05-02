@@ -382,8 +382,41 @@ export default function ScoreInputScreen() {
   };
   
   const handleViewScorecard = () => {
-    // Navigate back to the match detail screen
-    router.push(`/match/${id}`);
+    // Navigate to a new screen that shows the scorecard flow directly
+    // Instead of going back to the match detail screen and then to the scorecard
+    if (!match) return;
+    
+    // Save current scores before showing scorecard
+    if (!currentHoleSaved) {
+      saveCurrentHoleScores(false);
+    }
+    
+    // Create a temporary state object with necessary props to pass to ScorecardFlow
+    const scorecardProps = {
+      teams: match.teams.map(team => ({
+        id: team.id,
+        name: team.name,
+        initial: team.initial || team.name.charAt(0).toUpperCase(),
+        color: teamFixedColors[team.id] || team.color || '#CCCCCC',
+        scores: match.holes.map(hole => {
+          const score = hole.scores.find(s => s.teamId === team.id)?.score || null;
+          return score;
+        })
+      })),
+      presses: match.presses,
+      currentHole: currentHoleIndex + 1,
+      showBack9: showBack9,
+      matchId: id as string
+    };
+    
+    // Store the props in a global state or navigate with them
+    router.push({
+      pathname: `/match/scorecard/${id}`,
+      params: {
+        showBack9: showBack9 ? 'true' : 'false',
+        currentHole: (currentHoleIndex + 1).toString()
+      }
+    });
   };
 
   // Add this handler for submitting all presses

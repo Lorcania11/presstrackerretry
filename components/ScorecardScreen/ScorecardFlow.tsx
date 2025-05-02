@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, DollarSign } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import PressNotification from './PressNotification';
 import PressIndicator from './PressIndicator';
 import PressSummaryModal from '@/components/match/PressSummaryModal';
@@ -179,14 +179,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
           <ArrowLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Scorecard</Text>
-        {presses.length > 0 && (
-          <TouchableOpacity 
-            style={[styles.pressButton, { marginRight: insets.right }]}
-            onPress={() => setShowPressSummary(true)}
-          >
-            <DollarSign size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        )}
+        <View style={{width: 40}} /> {/* Empty view for balanced header */}
       </View>
       
       <View style={styles.toggleContainer}>
@@ -430,15 +423,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
-  },
-  pressButton: {
-    backgroundColor: '#FF9800',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
   },
   toggleContainer: {
     flexDirection: 'row',
