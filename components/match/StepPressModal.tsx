@@ -9,6 +9,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -396,68 +397,67 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       transparent={true}
       visible={isVisible}
       animationType="slide"
+      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.modalOverlay}>
-          <View 
-            style={[
-              styles.modalContent,
-              {
-                marginBottom: insets.bottom > 0 ? insets.bottom : Platform.OS === 'ios' ? 20 : 0,
-                marginTop: insets.top > 0 ? insets.top : Platform.OS === 'ios' ? 20 : 0,
-                marginLeft: insets.left > 0 ? insets.left : 0,
-                marginRight: insets.right > 0 ? insets.right : 0
-              }
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={handleBack}
-                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-              >
-                <Text style={styles.backButtonText}>
-                  {showConfirmation ? 'Add More' : 'Back'}
+      <SafeAreaView style={{ flex: 1, backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent' }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+        >
+          <View style={styles.modalOverlay}>
+            <View 
+              style={[
+                styles.modalContent,
+                Platform.OS === 'ios' && styles.iosModalContent
+              ]}
+            >
+              <View style={styles.modalHeader}>
+                <TouchableOpacity 
+                  style={styles.backButton} 
+                  onPress={handleBack}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                >
+                  <Text style={styles.backButtonText}>
+                    {showConfirmation ? 'Add More' : 'Back'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>
+                  {showConfirmation ? 'Review Presses' : 'Add Press'}
                 </Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>
-                {showConfirmation ? 'Review Presses' : 'Add Press'}
-              </Text>
-              <TouchableOpacity 
-                style={styles.closeButton} 
-                onPress={resetAndClose}
-                hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-              >
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity 
+                  style={styles.closeButton} 
+                  onPress={resetAndClose}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                >
+                  <Text style={styles.closeButtonText}>×</Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.stepsContainer}>
-              {currentStep === 4
-                ? renderConfirmationStep()
-                : currentStep <= 2
-                  ? renderTeamSelectionStep()
-                  : renderGameTypeSelectionStep()
-              }
-            </View>
+              <View style={styles.stepsContainer}>
+                {currentStep === 4
+                  ? renderConfirmationStep()
+                  : currentStep <= 2
+                    ? renderTeamSelectionStep()
+                    : renderGameTypeSelectionStep()
+                }
+              </View>
 
-            {currentStep === 3 && (
-              <TouchableOpacity
-                style={[
-                  styles.addPressButton,
-                  { marginBottom: Platform.OS === 'ios' ? 8 : 15 }
-                ]}
-                onPress={handleSave}
-              >
-                <Text style={styles.addPressButtonText}>Add Press</Text>
-              </TouchableOpacity>
-            )}
+              {currentStep === 3 && (
+                <TouchableOpacity
+                  style={[
+                    styles.addPressButton,
+                    { marginBottom: Platform.OS === 'ios' ? 8 : 15 }
+                  ]}
+                  onPress={handleSave}
+                >
+                  <Text style={styles.addPressButtonText}>Add Press</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -472,21 +472,29 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         paddingHorizontal: 10,
+        paddingBottom: 10,
       }
     }),
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    width: '90%',
+    width: '100%',
     maxWidth: 400,
-    maxHeight: '85%', // Slight reduction to ensure visibility on smaller devices
+    maxHeight: '85%', 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    overflow: 'hidden',
+  },
+  iosModalContent: {
+    height: '70%',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -495,6 +503,9 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   modalTitle: {
     fontSize: 18,
@@ -532,12 +543,14 @@ const styles = StyleSheet.create({
   },
   teamOption: {
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: 'center',
+    marginVertical: 5,
   },
   teamText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
   },
   teamRow: {
     flexDirection: 'row',
