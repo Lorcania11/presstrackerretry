@@ -251,51 +251,23 @@ export default function ScoreInputScreen() {
       return false;
     });
     
-    // Find the original bet for this nine
-    const originalBet = match.presses.find(press => {
-      if (isOnFrontNine) return press.pressType === 'front9' && press.isOriginalBet;
-      if (isOnBackNine) return press.pressType === 'back9' && press.isOriginalBet;
-      return false;
-    });
-    
-    // Find the most recent press for this nine if any (not original bet)
-    const recentPresses = match.presses
-      .filter(press => {
-        if (isOnFrontNine) return press.pressType === 'front9' && !press.isOriginalBet;
-        if (isOnBackNine) return press.pressType === 'back9' && !press.isOriginalBet;
-        return false;
-      })
-      .sort((a, b) => b.holeIndex - a.holeIndex); // Sort by hole index descending
-    
-    const mostRecentPress = recentPresses.length > 0 ? recentPresses[0] : null;
-    
     let statusMessage = '';
     let gameType = isOnFrontNine ? 'front9' : 'back9';
     
     if (match.playFormat === 'match') {
       // Match play calculation
-      const frontOrBackHoles = relevantHoles.map(hole => ({ ...hole }));
-      
-      // Create a subset match for calculation
-      const tempMatch = {
-        ...match,
-        holes: frontOrBackHoles
-      };
-      
-      const result = calculateMatchPlay(match.teams, frontOrBackHoles);
+      const result = calculateMatchPlay(match.teams, relevantHoles);
       statusMessage = result.status;
       
       // Simplify the status message
-      if (statusMessage.includes('UP')) {
+      if (statusMessage.includes(team1.name) && statusMessage.includes(' UP ')) {
         const parts = statusMessage.split(' ');
-        const upTeam = parts[0];
         const upAmount = parseInt(parts[1], 10) || 0;
-        
-        if (upTeam === team1.name) {
-          statusMessage = `${team1.name} is ${upAmount} UP`;
-        } else {
-          statusMessage = `${team1.name} is ${upAmount} DOWN`;
-        }
+        statusMessage = `${team1.name} is ${upAmount} UP`;
+      } else if (statusMessage.includes(team2.name) && statusMessage.includes(' UP ')) {
+        const parts = statusMessage.split(' ');
+        const upAmount = parseInt(parts[1], 10) || 0;
+        statusMessage = `${team1.name} is ${upAmount} DOWN`;
       } else if (statusMessage.includes('All Square')) {
         statusMessage = `Match is tied (All Square)`;
       }
@@ -303,10 +275,7 @@ export default function ScoreInputScreen() {
       // Stroke play calculation
       const result = calculateStrokePlay(match.teams, relevantHoles);
       
-      if (result.details && !Array.isArray(result.details)) {
-        const frontNineStatus = "Status not available";
-        statusMessage = frontNineStatus;
-      } else if (Array.isArray(result.details)) {
+      if (Array.isArray(result.details)) {
         // Get scores and determine who is up/down
         const team1Result = result.details.find(t => t.teamId === team1.id);
         const team2Result = result.details.find(t => t.teamId === team2.id);
@@ -321,6 +290,8 @@ export default function ScoreInputScreen() {
             statusMessage = 'Match is tied';
           }
         }
+      } else {
+        statusMessage = "Status not available";
       }
     }
     
@@ -337,9 +308,23 @@ export default function ScoreInputScreen() {
   
   const handlePressModalClose = () => {
     setShowPressModal(false);
-    
-    // This function should just close the modal without automatic navigation
-    // We'll let the users manually navigate to next hole after adding all desired presses
+    // The onDismissWithoutPress callback will handle navigation if needed
+  };
+
+  const handleDismissWithoutPress = () => {
+    // Automatically advance to next hole when press modal is dismissed without any presses
+    if (currentHoleIndex < 17) {
+      const newIndex = currentHoleIndex + 1;
+      setCurrentHoleIndex(newIndex);
+      if (match) {
+        initializeScores(match, newIndex);
+      }
+      setCurrentHoleSaved(false);
+      
+      if (newIndex === 9) {
+        setShowBack9(true);
+      }
+    }
   };
   
   const handleSavePresses = (updatedHole: Hole) => {
@@ -396,6 +381,23 @@ export default function ScoreInputScreen() {
   const handleViewScorecard = () => {
     // Navigate back to the match detail screen
     router.push(`/match/${id}`);
+  };
+
+  // Add this handler for submitting all presses
+  const handleSubmitAllPresses = () => {
+    // Advance to next hole after user submits all presses
+    if (currentHoleIndex < 17) {
+      const newIndex = currentHoleIndex + 1;
+      setCurrentHoleIndex(newIndex);
+      if (match) {
+        initializeScores(match, newIndex);
+      }
+      setCurrentHoleSaved(false);
+      
+      if (newIndex === 9) {
+        setShowBack9(true);
+      }
+    }
   };
   
   if (isLoading) {
@@ -561,6 +563,8 @@ export default function ScoreInputScreen() {
           }))}
           onClose={handlePressModalClose}
           onSave={handleSavePress}
+          onDismissWithoutPress={handleDismissWithoutPress}
+          onSubmitAllPresses={handleSubmitAllPresses}
           teamColors={FIXED_TEAM_COLORS}
           gameFormats={match.gameFormats.map(format => ({
             ...format,

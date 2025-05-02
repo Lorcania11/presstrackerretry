@@ -60,6 +60,8 @@ interface StepPressModalProps {
     statusMessage: string;
     gameType: string;
   } | null;
+  onDismissWithoutPress?: () => void; // Add this callback for when modal is closed without presses
+  onSubmitAllPresses?: () => void; // Add new callback for submitting all presses
 }
 
 const StepPressModal: React.FC<StepPressModalProps> = ({
@@ -73,7 +75,9 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
     '2': '#FFC105', // Default yellow for Team 2
   },
   gameFormats = [], // Default to empty array if not provided
-  matchStatus = null
+  matchStatus = null,
+  onDismissWithoutPress = () => {}, // Default empty function
+  onSubmitAllPresses = () => {} // Default empty function
 }) => {
   const insets = useSafeAreaInsets();
   const [fromTeamId, setFromTeamId] = useState<string | null>(null);
@@ -174,15 +178,26 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
     });
 
     resetAndClose();
+    
+    // Notify parent to advance to next hole after submitting all presses
+    onSubmitAllPresses();
   };
 
   const resetAndClose = () => {
+    // Check if we've added any presses
+    const shouldAdvanceToNextHole = addedPresses.length === 0;
+
     setFromTeamId(null);
     setToTeamId(null);
     setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
     setAddedPresses([]);
     setShowConfirmation(false);
     onClose();
+    
+    // If no presses were added, tell the parent to move to next hole
+    if (shouldAdvanceToNextHole) {
+      onDismissWithoutPress();
+    }
   };
 
   const handleBack = () => {
@@ -410,6 +425,13 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       visible={isVisible}
       animationType="slide"
       presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined}
+      onRequestClose={() => {
+        resetAndClose();
+        // If modal is dismissed by back button/gesture and no presses added
+        if (addedPresses.length === 0) {
+          onDismissWithoutPress();
+        }
+      }}
     >
       <SafeAreaView style={{ flex: 1, backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent' }}>
         <KeyboardAvoidingView
