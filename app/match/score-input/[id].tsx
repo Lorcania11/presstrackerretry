@@ -479,391 +479,394 @@ export default function ScoreInputScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.exitButton} 
-          onPress={handleExitRound}  // Changed to use the confirmation dialog
+          onPress={handleExitRound}
+          activeOpacity={0.7} activeOpacity={0.7} // Add this to provide better feedback on press
+          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }} // Better touch target for iOS
         >
-          <ChevronLeft size={20} color="#FFFFFF" />
+          <ChevronLeft size={20} color="#FFFFFF" />es.exitButtonText}>Exit Round</Text>
           <Text style={styles.exitButtonText}>Exit Round</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>atch.title}</Text>
         <Text style={styles.headerTitle}>{match.title}</Text>
-        <View style={styles.headerActions}>
+        <View style={styles.headerActions}> && match.presses.length > 0 && (
           {match.enablePresses && match.presses.length > 0 && (
             <TouchableOpacity 
               style={styles.pressButton} 
-              onPress={handleOpenPressSummary}
+              onPress={handleOpenPressSummary} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Improve touch area for iOS
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Improve touch area for iOS
-            >
-              <DollarSign size={18} color="#FFFFFF" />
+            >{18} color="#FFFFFF" />
+              <DollarSign size={18} color="#FFFFFF" /></TouchableOpacity>
             </TouchableOpacity>
           )}
-          <TouchableOpacity 
+          <TouchableOpacity } 
             style={styles.scorecardButton} 
-            onPress={handleViewScorecard}
+            onPress={handleViewScorecard} hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }} // Improve touch area for iOS
             hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }} // Improve touch area for iOS
-          >
-            <Text style={styles.scorecardButtonText}>View Scorecard</Text>
-          </TouchableOpacity>
-        </View>
+          >es.scorecardButtonText}>View Scorecard</Text>
+            <Text style={styles.scorecardButtonText}>View Scorecard</Text>chableOpacity>
+          </TouchableOpacity>w>
+        </View>      </View>
       </View>
 
-      <View style={styles.scoreInputContainer}>
+      <View style={styles.scoreInputContainer}><Text style={styles.holeTitle}>Enter Scores - Hole {holeNumber}</Text>
         <Text style={styles.holeTitle}>Enter Scores - Hole {holeNumber}</Text>
-        
+        ainer}>
         <ScrollView style={styles.teamsContainer}>
-          {match.teams.map((team, idx) => {
-            // Use fixed team color based on team order (first team green, second team yellow)
+          {match.teams.map((team, idx) => {reen, second team yellow)
+            // Use fixed team color based on team order (first team green, second team yellow)const teamColor = teamFixedColors[team.id] || team.color;
             const teamColor = teamFixedColors[team.id] || team.color;
             
-            return (
+            return (s.teamRow}>
               <View key={team.id} style={styles.teamRow}>
-                <View style={styles.teamInfo}>
+                <View style={styles.teamInfo}>backgroundColor: teamColor }]}>
                   <View style={[styles.teamCircle, { backgroundColor: teamColor }]}>
-                    <Text style={styles.teamInitial}>
-                      {team.initial || team.name.charAt(0).toUpperCase()}
+                    <Text style={styles.teamInitial}>.initial || team.name.charAt(0).toUpperCase()}
+                      {team.initial || team.name.charAt(0).toUpperCase()}t>
                     </Text>
-                  </View>
-                  <Text style={styles.teamName}>{team.name}</Text>
+                  </View> style={styles.teamName}>{team.name}</Text>
+                  <Text style={styles.teamName}>{team.name}</Text></View>
                 </View>
                 
-                <TextInput
-                  style={styles.scoreInput}
+                <TextInputut}
+                  style={styles.scoreInput}"numeric"
                   keyboardType="numeric"
                   maxLength={2}
-                  value={scores[team.id] || ''}
+                  value={scores[team.id] || ''}value) => handleScoreChange(team.id, value)}
                   onChangeText={(value) => handleScoreChange(team.id, value)}
-                  placeholder="0"
+                  placeholder="0"placeholderTextColor="#888888"
                   placeholderTextColor="#888888"
-                />
-              </View>
+                /></View>
+              </View>;
             );
-          })}
+          })}</ScrollView>
         </ScrollView>
-        
-        <View style={styles.navigationContainer}>
+        navigationContainer}>
+        <View style={styles.navigationContainer}>Opacity 
           <TouchableOpacity 
             style={[
-              styles.navigationButton, 
+              styles.navigationButton, urrentHoleIndex === 0 && styles.disabledButton
               currentHoleIndex === 0 && styles.disabledButton
             ]} 
-            onPress={handlePrevHole}
+            onPress={handlePrevHole} disabled={currentHoleIndex === 0}
             disabled={currentHoleIndex === 0}
-          >
+          >e={20} color={currentHoleIndex === 0 ? "#999999" : "#FFFFFF"} />
             <ArrowLeft size={20} color={currentHoleIndex === 0 ? "#999999" : "#FFFFFF"} />
             <Text style={[
-              styles.navigationButtonText,
+              styles.navigationButtonText,urrentHoleIndex === 0 && styles.disabledButtonText
               currentHoleIndex === 0 && styles.disabledButtonText
-            ]}>
+            ]}>ous Hole
               Previous Hole
-            </Text>
+            </Text></TouchableOpacity>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.saveButton} 
+          <TouchableOpacity tton} 
+            style={styles.saveButton}  onPress={handleSave}
             onPress={handleSave}
-          >
-            <Text style={styles.saveButtonText}>Save Scores</Text>
+          >es.saveButtonText}>Save Scores</Text>
+            <Text style={styles.saveButtonText}>Save Scores</Text></TouchableOpacity>
           </TouchableOpacity>
-          
+          Opacity 
           <TouchableOpacity 
             style={[
-              styles.navigationButton,
+              styles.navigationButton,urrentHoleIndex === 17 && styles.disabledButton
               currentHoleIndex === 17 && styles.disabledButton
             ]} 
-            onPress={handleNextHole}
+            onPress={handleNextHole} disabled={currentHoleIndex === 17}
             disabled={currentHoleIndex === 17}
           >
             <Text style={[
-              styles.navigationButtonText,
+              styles.navigationButtonText,urrentHoleIndex === 17 && styles.disabledButtonText
               currentHoleIndex === 17 && styles.disabledButtonText
-            ]}>
+            ]}>Hole
               Next Hole
-            </Text>
-            <ArrowRight size={20} color={currentHoleIndex === 17 ? "#999999" : "#FFFFFF"} />
-          </TouchableOpacity>
-        </View>
+            </Text>{20} color={currentHoleIndex === 17 ? "#999999" : "#FFFFFF"} />
+            <ArrowRight size={20} color={currentHoleIndex === 17 ? "#999999" : "#FFFFFF"} />chableOpacity>
+          </TouchableOpacity>w>
+        </View>      </View>
       </View>
-
-      {currentHoleSaved && currentHoleIndex < 17 && (
+7 && (
+      {currentHoleSaved && currentHoleIndex < 17 && (nextHoleContainer}>
         <View style={styles.nextHoleContainer}>
-          <TouchableOpacity 
-            style={styles.nextHoleButton}
+          <TouchableOpacity tton}
+            style={styles.nextHoleButton} onPress={handleNextHole}
             onPress={handleNextHole}
-          >
-            <Text style={styles.nextHoleButtonText}>Next Hole</Text>
-            <ArrowRight size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+          >Next Hole</Text>
+            <Text style={styles.nextHoleButtonText}>Next Hole</Text>{20} color="#FFFFFF" />
+            <ArrowRight size={20} color="#FFFFFF" />chableOpacity>
+          </TouchableOpacity></View>
+        </View>      )}
       )}
-
+ match && (
       {showPressSummary && match && (
         <PressSummaryModal
-          isVisible={showPressSummary}
+          isVisible={showPressSummary}{() => setShowPressSummary(false)}
           onClose={() => setShowPressSummary(false)}
           match={{
-            ...match,
-            // Ensure the match object has the latest data with correctly flagged original bets
+            ...match,est data with correctly flagged original bets
+            // Ensure the match object has the latest data with correctly flagged original betstch.presses.map(press => ({
             presses: match.presses.map(press => ({
-              ...press,
+              ...press,dex 0) for front9 and total18,
               // Original bets start on hole 1 (holeIndex 0) for front9 and total18,
-              // or on hole 10 (holeIndex 9) for back9
-              isOriginalBet: (press.holeIndex === 0 && 
+              // or on hole 10 (holeIndex 9) for back9 0 && 
+              isOriginalBet: (press.holeIndex === 0 &&  
                 (press.pressType === 'front9' || 
-                 press.pressType === 'front' || 
-                 press.pressType === 'total18' || 
+                 press.pressType === 'front' ||  
+                 press.pressType === 'total18' || tal')) ||
                  press.pressType === 'total')) ||
-              (press.holeIndex === 9 && 
-                (press.pressType === 'back9' || 
+              (press.holeIndex === 9 && || 
+                (press.pressType === 'back9' ||  press.pressType === 'back'))
                  press.pressType === 'back'))
-            })),
+            })),ch.holes.map(hole => ({
             holes: match.holes.map(hole => ({
-              ...hole,
-              presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
+              ...hole,resses: match.presses.filter(p => p.holeIndex === hole.number - 1)
+              presses: match.presses.filter(p => p.holeIndex === hole.number - 1)}))
             }))
-          }}
-          teamColors={FIXED_TEAM_COLORS}
-        />
+          }}teamColors={FIXED_TEAM_COLORS}
+          teamColors={FIXED_TEAM_COLORS}/>
+        />      )}
       )}
-
+& match && currentHole && (
       {showPressModal && match && currentHole && (
-        <StepPressModal
+        <StepPressModalssModal}
           isVisible={showPressModal}
-          hole={currentHole}
+          hole={currentHole}ch.teams.map(team => ({
           teams={match.teams.map(team => ({
-            ...team,
+            ...team,lor: teamFixedColors[team.id] || team.color || '#CCCCCC'
             color: teamFixedColors[team.id] || team.color || '#CCCCCC'
-          }))}
+          }))}lClose}
           onClose={handlePressModalClose}
-          onSave={handleSavePress}
-          onDismissWithoutPress={handleDismissWithoutPress}
+          onSave={handleSavePress}Press}
+          onDismissWithoutPress={handleDismissWithoutPress}itAllPresses}
           onSubmitAllPresses={handleSubmitAllPresses}
-          teamColors={FIXED_TEAM_COLORS}
+          teamColors={FIXED_TEAM_COLORS}{match.gameFormats.map(format => ({
           gameFormats={match.gameFormats.map(format => ({
-            ...format,
+            ...format,: 
             label: format.type === 'front' ? 'Front 9' : 
-                   format.type === 'back' ? 'Back 9' : 
+                   format.type === 'back' ? 'Back 9' :      format.type === 'total' ? 'Total 18' : format.type
                    format.type === 'total' ? 'Total 18' : format.type
-          }))}
-          matchStatus={pressModalInfo}
+          }))}matchStatus={pressModalInfo}
+          matchStatus={pressModalInfo}/>
         />
-      )}
-    </SafeAreaView>
-  );
+      )}</SafeAreaView>
+    </SafeAreaView> );
+  );}
 }
-
-const styles = StyleSheet.create({
+ StyleSheet.create({
+const styles = StyleSheet.create({ {
   container: {
-    flex: 1,
+    flex: 1,backgroundColor: '#F5F5F5',
     backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'center',-between',
+    justifyContent: 'space-between',6,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 12,FFFF',
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
+    borderBottomWidth: 1,borderBottomColor: '#EEEEEE',
     borderBottomColor: '#EEEEEE',
   },
-  backButton: {
+  backButton: {padding: 8,
     padding: 8,
   },
   exitButton: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center',FF3B30',
     backgroundColor: '#FF3B30',
-    paddingVertical: 6,
+    paddingVertical: 6,: 10,
     paddingHorizontal: 10,
-    borderRadius: 16,
-    // Improved iOS-specific shadow
+    borderRadius: 16,ific shadow
+    // Improved iOS-specific shadoworm.select({
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.25,
+        shadowColor: '#000',h: 0, height: 1 },
+        shadowOffset: { width: 0, height: 1 },.25,
+        shadowOpacity: 0.25,shadowRadius: 2,
         shadowRadius: 2,
       },
-      android: {
-        elevation: 2,
-      },
+      android: {elevation: 2,
+        elevation: 2,,
+      },}),
     }),
   },
   exitButtonText: {
-    color: '#FFFFFF',
+    color: '#FFFFFF',600',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 14,marginLeft: 4,
     marginLeft: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,,
+    fontWeight: '600',#333333',
     color: '#333333',
     flex: 1,
-    textAlign: 'center',
+    textAlign: 'center',marginHorizontal: 8,
     marginHorizontal: 8,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: 'row',alignItems: 'center',
     alignItems: 'center',
   },
-  pressButton: {
+  pressButton: {Color: '#FF9800',
     backgroundColor: '#FF9800',
     width: 36,
     height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 18,er',
+    justifyContent: 'center',nter',
+    alignItems: 'center',marginRight: 8,
     marginRight: 8,
   },
-  scorecardButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
+  scorecardButton: {AFF',
+    backgroundColor: '#007AFF',12,
+    paddingHorizontal: 12,6,
     paddingVertical: 6,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: 'center',justifyContent: 'center',
     justifyContent: 'center',
-  },
+  },Text: {
   scorecardButtonText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#FFFFFF',fontWeight: '500',
     fontWeight: '500',
-  },
+  },tainer: {
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center',backgroundColor: '#F5F5F5',
     backgroundColor: '#F5F5F5',
-  },
+  },iner: {
   errorContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center',backgroundColor: '#F5F5F5',
     backgroundColor: '#F5F5F5',
   },
   errorText: {
     fontSize: 16,
-    color: '#FF3B30',
+    color: '#FF3B30',textAlign: 'center',
     textAlign: 'center',
-  },
+  },Container: {
   scoreInputContainer: {
     flex: 1,
-    padding: 16,
+    padding: 16,olor: '#FFFFFF',
     backgroundColor: '#FFFFFF',
     margin: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: '#000',th: 0, height: 2 },
+    shadowOffset: { width: 0, height: 2 },.1,
+    shadowOpacity: 0.1, 4,
+    shadowRadius: 4,elevation: 3,
     elevation: 3,
   },
   holeTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '700',r',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 20,color: '#333333',
     color: '#333333',
-  },
+  },iner: {
   teamsContainer: {
-    flex: 1,
+    flex: 1,marginBottom: 20,
     marginBottom: 20,
   },
   teamRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center',space-between',
     justifyContent: 'space-between',
     marginBottom: 16,
     paddingVertical: 8,
-    borderBottomWidth: 1,
+    borderBottomWidth: 1,borderBottomColor: '#EEEEEE',
     borderBottomColor: '#EEEEEE',
   },
   teamInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row',ms: 'center',
+    alignItems: 'center',flex: 1,
     flex: 1,
-  },
+  },{
   teamCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+    borderRadius: 20,er',
+    justifyContent: 'center',alignItems: 'center',
     alignItems: 'center',
   },
-  teamInitial: {
+  teamInitial: {FF',
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 16,fontWeight: '600',
     fontWeight: '600',
   },
-  teamName: {
+  teamName: {2,
     marginLeft: 12,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 16,,
+    fontWeight: '500',color: '#333333',
     color: '#333333',
-  },
+  },{
   scoreInput: {
     width: 60,
     height: 48,
-    borderWidth: 1,
+    borderWidth: 1,DDDDD',
     borderColor: '#DDDDDD',
-    borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    borderRadius: 8,5F5',
+    backgroundColor: '#F5F5F5',ntal: 12,
     paddingHorizontal: 12,
-    fontSize: 18,
-    textAlign: 'center',
+    fontSize: 18,r',
+    textAlign: 'center',color: '#333333',
     color: '#333333',
   },
   navigationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'row',e-between',
+    justifyContent: 'space-between',alignItems: 'center',
     alignItems: 'center',
   },
   navigationButton: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    alignItems: 'center',AFF',
+    backgroundColor: '#007AFF',2,
+    paddingHorizontal: 12, 10,
+    paddingVertical: 10,borderRadius: 8,
     borderRadius: 8,
-  },
+  },nText: {
   navigationButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 14,,
+    fontWeight: '500',F',
     color: '#FFFFFF',
-    marginLeft: 4,
+    marginLeft: 4,marginRight: 4,
     marginRight: 4,
   },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+  saveButton: {F50',
+    backgroundColor: '#4CAF50',4,
+    paddingHorizontal: 24, 10,
+    paddingVertical: 10,borderRadius: 8,
     borderRadius: 8,
-  },
+  }, {
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,,
+    fontWeight: '600',color: '#FFFFFF',
     color: '#FFFFFF',
   },
-  disabledButton: {
+  disabledButton: {backgroundColor: '#CCCCCC',
     backgroundColor: '#CCCCCC',
-  },
-  disabledButtonText: {
+  }, {
+  disabledButtonText: {color: '#999999',
     color: '#999999',
-  },
+  },ner: {
   nextHoleContainer: {
-    padding: 16,
+    padding: 16,alignItems: 'center',
     alignItems: 'center',
   },
   nextHoleButton: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    alignItems: 'center',AFF',
+    backgroundColor: '#007AFF',4,
+    paddingHorizontal: 24, 12,
+    paddingVertical: 12,borderRadius: 8,
     borderRadius: 8,
-  },
+  },ext: {
   nextHoleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginRight: 8,
-  },
-});
+    fontSize: 16,,
+    fontWeight: '600',',
+    color: '#FFFFFF',marginRight: 8,
+    marginRight: 8,,
+
+
+});  },});
