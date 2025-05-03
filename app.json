@@ -1,47 +1,38 @@
 {
   "expo": {
-    "name": "PressTrackerv1.1",
-    "slug": "presstrackerv11",
-    "version": "1.0.2",
-    "icon": "./assets/images/icon.png",
+    "name": "PressTracker",
+    "slug": "presstracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/images/splash.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#e8f3f5"
-    },
-    "ios": {
-      "bundleIdentifier": "com.lorcania.presstrackerv1.1.1",
-      "buildNumber": "1.1.1",
-      "supportsTablet": true,
-      "requireFullScreen": false,
-      "infoPlist": {
-        "UIBackgroundModes": [],
-        "UIViewControllerBasedStatusBarAppearance": true,
-        "UIStatusBarStyle": "UIStatusBarStyleDefault",
-        "NSLocationWhenInUseUsageDescription": "This app does not use your location.",
-        "ITSAppUsesNonExemptEncryption": false,
-        "UIUserInterfaceStyle": "Light"
-      },
-      "appStoreUrl": "https://apps.apple.com/app/presstracker/id123456789"
+      "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/e28b9a3c-e4b8-4f9d-b66d-6b2b60ddc31b"
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.presstracker"
     },
-    "runtimeVersion": {
-      "policy": "1.0.0"
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.yourcompany.presstracker"
     },
-    "jsEngine": "hermes",
-    "extra": {
-      "eas": {
-        "projectId": "e28b9a3c-e4b8-4f9d-b66d-6b2b60ddc31b"
-      }
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
-    "owner": "lorcania"
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    }
   }
 }
