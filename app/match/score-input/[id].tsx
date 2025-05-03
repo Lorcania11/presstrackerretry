@@ -460,7 +460,7 @@ export default function ScoreInputScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.exitButton} 
-          onPress={() => router.push(`/match/${id}`)}
+          onPress={() => router.replace('/')} // Changed from router.push(`/match/${id}`) to router.replace('/')
         >
           <ChevronLeft size={20} color="#FFFFFF" />
           <Text style={styles.exitButtonText}>Exit Round</Text>
