@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { hasNotchOrDynamicIsland } from '@/utils/statusBarManager';
+import { hasNotchOrCutout } from '@/utils/statusBarManager';
 
 interface Team {
   id: string;
@@ -489,7 +489,7 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         flex: 1, 
         backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent',
         paddingBottom: insets.bottom > 0 ? 0 : 10, // Only add padding if we don't have a home indicator
-        paddingTop: Platform.OS === 'ios' && hasNotchOrDynamicIsland() ? 0 : insets.top,
+        paddingTop: Platform.OS === 'ios' && hasNotchOrCutout() ? 0 : insets.top,
       }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}

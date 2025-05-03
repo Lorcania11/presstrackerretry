@@ -424,11 +424,8 @@ export default function ScoreInputScreen() {
           style: "destructive",
           onPress: () => {
             try {
-              // Force navigation to home screen using a direct path
-              router.navigate({
-                pathname: '/(tabs)',
-                replace: true
-              });
+              // Fixed: Use router.replace instead of navigate with replace: true
+              router.replace('/(tabs)');
             } catch (error) {
               console.error("Navigation error:", error);
               // Alternative approach if the primary fails

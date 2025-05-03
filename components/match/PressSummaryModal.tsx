@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown, ChevronUp, X, DollarSign } from 'lucide-react-native';
 import Modal from 'react-native-modal';
 import { StatusBar } from 'expo-status-bar';
-import { hasNotchOrDynamicIsland } from '@/utils/statusBarManager';
+import { hasNotchOrCutout } from '@/utils/statusBarManager';
 
 interface PressSummaryModalProps {
   isVisible: boolean;
@@ -111,7 +111,7 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
         styles.container, 
         { 
           paddingTop: Platform.OS === 'ios' 
-            ? hasNotchOrDynamicIsland() ? insets.top : 10 
+            ? hasNotchOrCutout() ? insets.top : 10 
             : insets.top || 10, 
           paddingBottom: Math.max(insets.bottom + 10, 20)
         }
