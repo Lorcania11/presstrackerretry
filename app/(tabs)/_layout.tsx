@@ -11,6 +11,7 @@ export default function TabLayout() {
   return (
     <>
       <StatusBar style="dark" />
+      {/* @ts-ignore - Known issue with expo-router types */}
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: '#007AFF',

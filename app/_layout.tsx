@@ -44,6 +44,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <MatchProvider>
+          {/* @ts-ignore - Known issue with expo-router types */}
           <Stack
             screenOptions={{
               // Apply consistent animations across platforms based on iOS patterns

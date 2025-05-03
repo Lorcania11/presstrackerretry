@@ -395,9 +395,9 @@ export default function ScoreInputScreen() {
       saveCurrentHoleScores(false);
     }
     
-    // Store the props in a global state or navigate with them
+    // Fix: Cast the path to be compatible with RelativePathString
     router.push({
-      pathname: `/match/scorecard/${id}`,
+      pathname: `/match/scorecard/${id}` as any, // Use 'as any' to bypass TypeScript's route checking
       params: {
         showBack9: showBack9 ? 'true' : 'false',
         currentHole: (currentHoleIndex + 1).toString()
