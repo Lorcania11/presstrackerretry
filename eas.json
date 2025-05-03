@@ -28,9 +28,9 @@
     "submit": {
       "production": {
         "ios": {
-          "appleId": "${APPLE_ID}",
-          "ascAppId": "${APPLE_APP_ID}",
-          "appleTeamId": "${APPLE_TEAM_ID}"
+          "appleId": "kalebjordansmith22@outlook.com",
+          "ascAppId": "6745416363",
+          "appleTeamId": "UXG3NN6XT7"
         }
       }
     }
