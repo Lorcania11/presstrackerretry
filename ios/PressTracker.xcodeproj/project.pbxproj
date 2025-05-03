@@ -302,7 +302,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.lorcania.presstracker";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lorcania.presstrackerv1.1.1";
 				PRODUCT_NAME = "PressTracker";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -329,7 +329,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.lorcania.presstracker";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lorcania.presstrackerv1.1.1";
 				PRODUCT_NAME = "PressTracker";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
