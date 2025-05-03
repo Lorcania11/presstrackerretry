@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PressTracker",
-    "slug": "presstracker",
+    "slug": "presstrackerv11",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -9,14 +9,17 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#9ab0a6"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.presstracker"
+      "bundleIdentifier": "com.lorcania.presstrackerv1.1.1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +36,14 @@
     ],
     "experiments": {
       "tsconfigPaths": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "e28b9a3c-e4b8-4f9d-b66d-6b2b60ddc31b"
+      }
     }
   }
 }
