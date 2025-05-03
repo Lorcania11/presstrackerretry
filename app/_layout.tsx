@@ -19,9 +19,9 @@ export default function RootLayout() {
             options={{ 
               headerShown: false,
               presentation: Platform.OS === 'ios' ? 'modal' : 'card',
-              animation: Platform.OS === 'ios' ? 'modal' : 'slide_from_right',
-              gestureEnabled: true, // Enable swipe gestures on iOS
-              gestureResponseDistance: Platform.OS === 'ios' ? 50 : 25, // Better iOS swipe response
+              animation: Platform.OS === 'ios' ? 'fade' : 'slide_from_right',
+              gestureEnabled: true, 
+              gestureResponseDistance: Platform.OS === 'ios' ? { horizontal: 50 } : { horizontal: 25 },
             }} 
           />
           <Stack.Screen 
@@ -30,7 +30,7 @@ export default function RootLayout() {
               headerShown: false,
               presentation: 'modal',
               animation: 'slide_from_bottom',
-              gestureEnabled: true, // Enable swipe gestures on iOS
+              gestureEnabled: true,
             }} 
           />
           <Stack.Screen 
@@ -39,7 +39,7 @@ export default function RootLayout() {
               headerShown: false,
               presentation: 'card',
               animation: 'slide_from_right',
-              gestureEnabled: false, // Disable swipe back on iOS to prevent accidental exits
+              gestureEnabled: false, // Prevent accidental exits
             }} 
           />
           <Stack.Screen 

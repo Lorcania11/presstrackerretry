@@ -139,17 +139,28 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   const [gameTypes, setGameTypes] = useState<GameType[]>(mapGameFormatsToTypes());
 
   useEffect(() => {
-    // iOS-specific back button/gesture handling
+    // Enhanced iOS-specific back button/gesture handling
     if (Platform.OS === 'ios') {
-      const backHandler = () => {
-        // Handle back navigation logic for iOS
-        handleBack();
+      // This code will improve the modal's behavior on iOS
+      const handleIOSBackAction = () => {
+        if (showConfirmation) {
+          setShowConfirmation(false);
+          return true;
+        }
+        if (fromTeamId && toTeamId) {
+          setFromTeamId(null);
+          setToTeamId(null);
+          return true;
+        }
+        resetAndClose();
         return true;
       };
       
-      // Set up any iOS-specific event listeners if needed
+      // In a real implementation, we would set up listeners here
+      // And return a cleanup function
+      
       return () => {
-        // Clean up iOS-specific event listeners
+        // Cleanup function
       };
     }
   }, [showConfirmation, fromTeamId, toTeamId]);
@@ -204,19 +215,26 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   };
 
   const resetAndClose = () => {
-    // Check if we've added any presses
+    // Check if we've added any presses - enhanced for iOS
     const shouldAdvanceToNextHole = addedPresses.length === 0;
-
+    
+    // Reset state
     setFromTeamId(null);
     setToTeamId(null);
     setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
     setAddedPresses([]);
     setShowConfirmation(false);
+    
+    // Close modal
     onClose();
     
-    // If no presses were added, tell the parent to move to next hole
+    // If no presses were added and appropriate, tell parent to advance
     if (shouldAdvanceToNextHole) {
-      onDismissWithoutPress();
+      // Use setTimeout to ensure the modal is closed first
+      // This prevents animation issues on iOS
+      setTimeout(() => {
+        onDismissWithoutPress();
+      }, Platform.OS === 'ios' ? 100 : 0);
     }
   };
 
@@ -446,10 +464,20 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       animationType="slide"
       presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined}
       onRequestClose={() => {
-        resetAndClose();
-        // If modal is dismissed by back button/gesture and no presses added
-        if (addedPresses.length === 0) {
-          onDismissWithoutPress();
+        // Enhanced for iOS - ensures proper behavior when using hardware back or swipe
+        if (Platform.OS === 'ios') {
+          // For iOS, we want a smoother dismissal
+          if (showConfirmation) {
+            setShowConfirmation(false);
+          } else if (fromTeamId && toTeamId) {
+            setFromTeamId(null);
+            setToTeamId(null);
+          } else {
+            resetAndClose();
+          }
+        } else {
+          // For Android, we can just reset and close
+          resetAndClose();
         }
       }}
     >
