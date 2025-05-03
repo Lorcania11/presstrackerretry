@@ -406,6 +406,11 @@ export default function ScoreInputScreen() {
   };
 
   const handleExitRound = () => {
+    // First save the current scores before exiting
+    if (!currentHoleSaved) {
+      saveCurrentHoleScores(false);
+    }
+    
     Alert.alert(
       "Exit Round",
       "Are you sure you want to exit this round? Your progress has been saved.",
@@ -417,7 +422,17 @@ export default function ScoreInputScreen() {
         {
           text: "Exit",
           style: "destructive",
-          onPress: () => router.replace('/')
+          onPress: () => {
+            // Make sure we properly navigate back to the home screen
+            try {
+              // Use replace to prevent going back to this screen
+              router.replace('/');
+            } catch (error) {
+              console.error("Navigation error:", error);
+              // Fallback navigation attempts
+              router.navigate('/');
+            }
+          }
         }
       ]
     );
