@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Press Tracker",
-    "slug": "presstracker",
+    "slug": "presstrackerv11",
     "version": "1.0.2",
     "icon": "./assets/images/icon.png",
     "splash": {
@@ -10,8 +10,8 @@
       "backgroundColor": "#e8f3f5"
     },
     "ios": {
-      "bundleIdentifier": "com.lorcania.presstracker",
-      "buildNumber": "1.0.2",
+      "bundleIdentifier": "com.lorcania.presstrackerv1.1.1",
+      "buildNumber": "1.1.1",
       "supportsTablet": true,
       "requireFullScreen": false,
       "infoPlist": {
@@ -41,6 +41,7 @@
       "eas": {
         "projectId": "c4e41133-416c-44e7-a5e9-76b1fecc2bf6"
       }
-    }
+    },
+    "owner": "lorcania"
   }
 }
