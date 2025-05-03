@@ -111,17 +111,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
     // Original bets are:
     // - front9 or total18 presses on hole 1 (holeIndex 0)
     // - back9 presses on hole 10 (holeIndex 9)
-    const isOriginalBet = (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
-                           (press.holeIndex === 9 && press.pressType === 'back9');
-    return {
-      ...press,
-      isOriginalBet
-    };
-  });
-
-  // Identify and flag original bets correctly based on their hole indices
-  const pressesWithOriginalBets = presses.map(press => {
-    // Check both hole index and press type to determine if it's an original bet
+    
     // Support multiple formats of press type naming
     const frontPressTypes = ['front9', 'front'];
     const backPressTypes = ['back9', 'back'];
@@ -137,7 +127,10 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         isOriginalBet: true
       };
     }
-    return press;
+    return {
+      ...press,
+      isOriginalBet: false
+    };
   });
 
   // Create a mock match object for the press summary modal
@@ -150,7 +143,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       initial: team.initial,
       color: team.fixedColor,
     })),
-    presses: pressesWithOriginalBets, // Use the array with properly flagged bets
+    presses: pressesWithOriginalBetFlags, // Use the array with properly flagged bets
     holes: Array(18).fill(0).map((_, i) => ({
       number: i + 1,
       scores: teamsWithFixedColors.map(team => ({
@@ -410,8 +403,8 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
           onClose={() => setShowPressSummary(false)}
           match={{
             ...mockMatch,
-            // Use the presses with marked original bets
-            presses: pressesWithOriginalBets,
+            // Use the same pressesWithOriginalBetFlags for consistency
+            presses: pressesWithOriginalBetFlags,
             holes: mockMatch.holes.map(hole => ({...hole}))
           }}
           teamColors={FIXED_TEAM_COLORS}

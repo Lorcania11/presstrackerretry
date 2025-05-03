@@ -35,7 +35,8 @@ const PressIndicator: React.FC<PressIndicatorProps> = ({
   // Find presses that originated on this hole
   const relevantPresses = presses.filter(press => {
     // Only include presses at this hole index
-    return press.holeIndex === currentHoleIndex;
+    // AND exclude original bets
+    return press.holeIndex === currentHoleIndex && !press.isOriginalBet;
   });
   
   // Group presses by team that initiated them (fromTeamId)
