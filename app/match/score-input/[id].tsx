@@ -10,6 +10,7 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMatches } from '@/hooks/useMatches';
@@ -419,6 +420,24 @@ export default function ScoreInputScreen() {
     });
   };
 
+  const handleExitRound = () => {
+    Alert.alert(
+      "Exit Round",
+      "Are you sure you want to exit this round? Your progress has been saved.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Exit",
+          style: "destructive",
+          onPress: () => router.replace('/')
+        }
+      ]
+    );
+  };
+
   // Add this handler for submitting all presses
   const handleSubmitAllPresses = () => {
     // Advance to next hole after user submits all presses
@@ -460,7 +479,7 @@ export default function ScoreInputScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.exitButton} 
-          onPress={() => router.replace('/')} // Changed from router.push(`/match/${id}`) to router.replace('/')
+          onPress={handleExitRound}  // Changed to use the confirmation dialog
         >
           <ChevronLeft size={20} color="#FFFFFF" />
           <Text style={styles.exitButtonText}>Exit Round</Text>
@@ -471,11 +490,16 @@ export default function ScoreInputScreen() {
             <TouchableOpacity 
               style={styles.pressButton} 
               onPress={handleOpenPressSummary}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Improve touch area for iOS
             >
               <DollarSign size={18} color="#FFFFFF" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.scorecardButton} onPress={handleViewScorecard}>
+          <TouchableOpacity 
+            style={styles.scorecardButton} 
+            onPress={handleViewScorecard}
+            hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }} // Improve touch area for iOS
+          >
             <Text style={styles.scorecardButtonText}>View Scorecard</Text>
           </TouchableOpacity>
         </View>
@@ -650,12 +674,18 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 16,
-    // iOS-specific shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
+    // Improved iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   exitButtonText: {
     color: '#FFFFFF',

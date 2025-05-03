@@ -175,6 +175,7 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         <TouchableOpacity 
           style={[styles.backButton, { marginLeft: insets.left }]} 
           onPress={onBack}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Better iOS touch target
         >
           <ArrowLeft size={24} color="#007AFF" />
         </TouchableOpacity>
@@ -418,6 +419,14 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+    ...Platform.select({
+      ios: {
+        // Improved visibility and touch area for iOS
+        backgroundColor: 'rgba(255,255,255,0.3)',
+        borderRadius: 20,
+        padding: 10,
+      }
+    }),
   },
   headerTitle: {
     fontSize: 18,
@@ -431,6 +440,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderRadius: 8,
     overflow: 'hidden',
+    // Add iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+    }),
   },
   toggleButton: {
     flex: 1,

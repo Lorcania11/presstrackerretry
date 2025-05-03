@@ -19,7 +19,9 @@ export default function RootLayout() {
             options={{ 
               headerShown: false,
               presentation: Platform.OS === 'ios' ? 'modal' : 'card',
-              animation: 'slide_from_right',
+              animation: Platform.OS === 'ios' ? 'modal' : 'slide_from_right',
+              gestureEnabled: true, // Enable swipe gestures on iOS
+              gestureResponseDistance: Platform.OS === 'ios' ? 50 : 25, // Better iOS swipe response
             }} 
           />
           <Stack.Screen 
@@ -28,14 +30,16 @@ export default function RootLayout() {
               headerShown: false,
               presentation: 'modal',
               animation: 'slide_from_bottom',
+              gestureEnabled: true, // Enable swipe gestures on iOS
             }} 
           />
           <Stack.Screen 
             name="match/score-input/[id]" 
             options={{ 
               headerShown: false,
-              presentation: 'card', // Important - not a modal
+              presentation: 'card',
               animation: 'slide_from_right',
+              gestureEnabled: false, // Disable swipe back on iOS to prevent accidental exits
             }} 
           />
           <Stack.Screen 
@@ -44,6 +48,7 @@ export default function RootLayout() {
               headerShown: false,
               presentation: 'card',
               animation: 'slide_from_right',
+              gestureEnabled: true,
             }} 
           />
         </Stack>

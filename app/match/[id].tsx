@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMatches } from '@/hooks/useMatches';
@@ -195,7 +196,11 @@ export default function MatchDetailScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Better iOS touch target
+        >
           <ChevronLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{match.title}</Text>
@@ -205,6 +210,7 @@ export default function MatchDetailScreen() {
               style={styles.pressButton} 
               onPress={handleOpenPressSummary}
               accessibilityLabel="View press summary"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} // Better iOS touch target
             >
               <DollarSign size={18} color="#FFFFFF" style={styles.pressButtonIcon} />
               <Text style={styles.pressButtonText}>Press Log</Text>
@@ -292,11 +298,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     // iOS-specific shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.5,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   pressButtonIcon: {
     marginRight: 4,
@@ -339,6 +351,18 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     flexDirection: 'row',
     justifyContent: 'center',
+    // iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   inputScoreButton: {
     backgroundColor: '#4CAF50',

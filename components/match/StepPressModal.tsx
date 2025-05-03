@@ -138,6 +138,22 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
 
   const [gameTypes, setGameTypes] = useState<GameType[]>(mapGameFormatsToTypes());
 
+  useEffect(() => {
+    // iOS-specific back button/gesture handling
+    if (Platform.OS === 'ios') {
+      const backHandler = () => {
+        // Handle back navigation logic for iOS
+        handleBack();
+        return true;
+      };
+      
+      // Set up any iOS-specific event listeners if needed
+      return () => {
+        // Clean up iOS-specific event listeners
+      };
+    }
+  }, [showConfirmation, fromTeamId, toTeamId]);
+
   const handleSave = () => {
     if (!fromTeamId || !toTeamId) {
       Alert.alert('Error', 'Please select teams for the press');
@@ -437,7 +453,10 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         }
       }}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent' }}>
+      <SafeAreaView style={{ 
+        flex: 1, 
+        backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent' 
+      }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1 }}
