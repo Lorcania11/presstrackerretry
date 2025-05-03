@@ -23,26 +23,35 @@ export enum DeviceModel {
 // Cache the detected model
 let detectedDeviceModel: DeviceModel | null = null;
 
-// Get status bar height for iOS (either from StatusBarManager or fallback value)
-let statusBarHeight = 0;
-if (Platform.OS === 'ios') {
-  // Try to get the status bar height from StatusBarManager
-  if (StatusBarManager && StatusBarManager.getHeight) {
-    StatusBarManager.getHeight((statusBarFrameData: { height: number }) => {
-      statusBarHeight = statusBarFrameData.height;
-    });
-  } else {
-    // Fallback values based on common device types
-    const { height, width } = Dimensions.get('window');
-    const aspectRatio = height / width;
-    
-    if (aspectRatio > 2) {
-      // Modern iPhones with notch or Dynamic Island
-      statusBarHeight = 47;
-    } else {
-      // Classic iPhones
-      statusBarHeight = 20;
+// Get fallback status bar height based on device dimensions
+const getStatusBarHeightFallback = (): number => {
+  if (Platform.OS !== 'ios') return 0;
+  
+  const { height, width } = Dimensions.get('window');
+  const aspectRatio = height / width;
+  
+  if (aspectRatio > 2.1) {
+    return 47; // Modern iPhones with notch or Dynamic Island
+  } else if (aspectRatio > 1.8) {
+    return 20; // Classic iPhones
+  }
+  return 20; // Default fallback
+};
+
+// Initialize with a reasonable fallback value
+let statusBarHeight = Platform.OS === 'ios' ? getStatusBarHeightFallback() : 0;
+
+// Try to get the status bar height from StatusBarManager in a safer way
+if (Platform.OS === 'ios' && StatusBarManager && StatusBarManager.getHeight) {
+  try {
+    // For iOS, use a safer approach with default value
+    if (StatusBarManager.HEIGHT !== undefined) {
+      // Direct constant is available on some React Native versions
+      statusBarHeight = StatusBarManager.HEIGHT;
     }
+  } catch (error) {
+    console.log('Error getting status bar height:', error);
+    // Keep using the fallback value
   }
 }
 
@@ -74,8 +83,6 @@ export function detectDeviceModel(): DeviceModel {
     }
   } else if (Platform.OS === 'android') {
     // Android detection logic
-    // Note: This is a simple implementation. For more accurate detection,
-    // you might want to use a native module or check for cutout support
     const { height, width } = Dimensions.get('window');
     const aspectRatio = height / width;
     
@@ -107,18 +114,7 @@ export function getStatusBarHeight(): number {
     }
     
     // Fallback values based on model
-    const model = detectDeviceModel();
-    
-    switch (model) {
-      case DeviceModel.DYNAMIC_ISLAND:
-        return 54; // Height for Dynamic Island models
-      case DeviceModel.NOTCHED:
-        return 47; // Height for notched models (X, XS, 11, etc.)
-      case DeviceModel.CLASSIC_IOS:
-        return 20; // Height for classic iPhones (8 and below)
-      default:
-        return 20; // Default fallback
-    }
+    return getStatusBarHeightFallback();
   }
   
   return 0; // Default for other platforms

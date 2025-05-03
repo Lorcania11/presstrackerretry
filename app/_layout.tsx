@@ -4,41 +4,52 @@ import { StatusBar } from 'expo-status-bar';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MatchProvider } from '@/context/MatchContext';
-import { Platform } from 'react-native';
+import { Platform, LogBox } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useSplashScreen } from '@/utils/splashScreenManager';
 import { useDeepLinks } from '@/utils/deepLinkingManager';
+
+// Ignore specific harmless warnings that might appear during development
+LogBox.ignoreLogs([
+  'Sending `onAnimatedValueUpdate`',
+  'Non-serializable values were found in the navigation state',
+]);
 
 export default function RootLayout() {
   const [isAppReady, setIsAppReady] = useState(false);
   const { isReady } = useFrameworkReady();
   const deepLinking = useDeepLinks();
   
-  // Handle the splash screen visibility
-  useSplashScreen(isAppReady);
+  // Handle the splash screen visibility with an increased delay on iOS
+  const splashDelay = Platform.OS === 'ios' ? 800 : 500;
+  useSplashScreen(isAppReady, splashDelay);
   
   useEffect(() => {
     if (isReady) {
       // Wait a moment to ensure UI is fully loaded before hiding splash screen
+      // Use a longer delay on iOS to ensure all native modules are properly initialized
       const timeout = setTimeout(() => {
         setIsAppReady(true);
-      }, 200);
+      }, Platform.OS === 'ios' ? 400 : 200);
       
       return () => clearTimeout(timeout);
     }
   }, [isReady]);
   
-  // Handle initial deep link if present
+  // Handle initial deep link if present - with extra safety checks for iOS
   useEffect(() => {
-    if (deepLinking.parsed && isAppReady) {
-      // Process deep link here if needed
-      console.log('Deep link detected:', deepLinking.url);
-      console.log('Parsed data:', deepLinking.parsed);
-      
-      // Clear the deep link after processing
-      deepLinking.clearDeepLink();
+    if (deepLinking.parsed && isAppReady && !deepLinking.isProcessingInitialURL) {
+      try {
+        // Process deep link here if needed
+        console.log('Deep link detected:', deepLinking.url);
+        
+        // Clear the deep link after processing
+        deepLinking.clearDeepLink();
+      } catch (error) {
+        console.log('Error processing deep link:', error);
+      }
     }
-  }, [deepLinking.parsed, isAppReady]);
+  }, [deepLinking.parsed, isAppReady, deepLinking.isProcessingInitialURL]);
 
   return (
     <SafeAreaProvider>
