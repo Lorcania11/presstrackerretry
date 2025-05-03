@@ -187,7 +187,7 @@ export default function NewMatchScreen() {
     };
 
     await saveMatch(newMatch);
-    router.push(`/match/${newMatch.id}`);
+    router.push(`/match/score-input/${newMatch.id}`);
   };
 
   const validateForm = () => {

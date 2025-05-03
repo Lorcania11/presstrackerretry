@@ -46,6 +46,13 @@ export default function HomeScreen() {
 
   const quickActions: QuickAction[] = [
     {
+      icon: <Calendar size={24} color="#4CAF50" />,
+      title: "Start Round",
+      subtitle: "Begin scoring a match",
+      route: "/new-match",
+      color: "#E8F5E9" // Light green background to highlight this action
+    },
+    {
       icon: <Calendar size={24} color="#007AFF" />,
       title: "Schedule Match",
       subtitle: "Set up a new game",

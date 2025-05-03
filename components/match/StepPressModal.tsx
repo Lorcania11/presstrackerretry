@@ -209,14 +209,18 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
       });
     });
 
-    resetAndClose();
+    // Close the modal first to ensure UI state is clean
+    onClose();
     
-    // Notify parent to advance to next hole after submitting all presses
-    onSubmitAllPresses();
+    // Use a short timeout to ensure modal is fully closed before navigation
+    setTimeout(() => {
+      // Notify parent to advance to next hole after submitting all presses
+      onSubmitAllPresses();
+    }, Platform.OS === 'ios' ? 300 : 100);
   };
 
   const resetAndClose = () => {
-    // Check if we've added any presses - enhanced for iOS
+    // Check if we've added any presses
     const shouldAdvanceToNextHole = addedPresses.length === 0;
     
     // Reset state
@@ -229,13 +233,11 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
     // Close modal
     onClose();
     
-    // If no presses were added and appropriate, tell parent to advance
+    // If no presses were added and we should advance, use timeout to ensure modal is closed first
     if (shouldAdvanceToNextHole) {
-      // Use setTimeout to ensure the modal is closed first
-      // This prevents animation issues on iOS
       setTimeout(() => {
         onDismissWithoutPress();
-      }, Platform.OS === 'ios' ? 100 : 0);
+      }, Platform.OS === 'ios' ? 300 : 100);
     }
   };
 

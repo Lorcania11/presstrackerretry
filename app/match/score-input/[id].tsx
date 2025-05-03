@@ -423,14 +423,16 @@ export default function ScoreInputScreen() {
           text: "Exit",
           style: "destructive",
           onPress: () => {
-            // Make sure we properly navigate back to the home screen
             try {
-              // Use replace to prevent going back to this screen
-              router.replace('/');
+              // Force navigation to home screen using a direct path
+              router.navigate({
+                pathname: '/(tabs)',
+                replace: true
+              });
             } catch (error) {
               console.error("Navigation error:", error);
-              // Fallback navigation attempts
-              router.navigate('/');
+              // Alternative approach if the primary fails
+              router.replace('/');
             }
           }
         }
@@ -606,7 +608,11 @@ export default function ScoreInputScreen() {
             </View>
           </View>
 
-          {currentHoleSaved && currentHoleIndex < 17 && (
+          {/* Conditional rendering for Next Hole button */}
+          {currentHoleSaved && 
+            currentHoleIndex < 17 && 
+            !showPressModal && 
+            !showPressSummary && (
             <View style={[styles.nextHoleContainer, { paddingBottom: Platform.OS === 'ios' ? 20 : 16 }]}>
               <TouchableOpacity 
                 style={styles.nextHoleButton}
