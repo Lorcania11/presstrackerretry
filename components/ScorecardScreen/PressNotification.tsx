@@ -31,64 +31,69 @@ const PressNotification: React.FC<PressNotificationProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  // Group presses by hole index and team combinations to avoid duplicates
-  const uniquePresses = new Map<string, Press>();
-  
-  // Process presses to remove duplicates for the same hole and team combination
-  presses.forEach(press => {
+  // Skip original bets and filter irrelevant presses first
+  const relevantPresses = presses.filter(press => {
     // Skip original bets
-    if (press.isOriginalBet) return;
+    if (press.isOriginalBet) return false;
     
     // Check if press is relevant to current view (front9 or back9)
     const isRelevantToView = showBack9 
       ? (press.holeIndex >= 9 && press.holeIndex <= 17)
       : (press.holeIndex >= 0 && press.holeIndex <= 8);
       
-    if (!isRelevantToView) return;
+    return isRelevantToView;
+  });
+
+  // Group presses by game type and team combinations
+  // Create a key for each unique game type + team combination
+  const gameTypeGroups = new Map<string, Press>();
+
+  // Process presses to keep only the most recent for each game type
+  relevantPresses.forEach(press => {
+    // Normalize the press type
+    const normalizedPressType = getNormalizedPressType(press.pressType);
     
-    // Create a unique key for this press based on hole index, teams involved, and press type
-    const uniqueKey = `${press.holeIndex}-${press.fromTeamId}-${press.toTeamId}-${press.pressType}`;
+    // Create a composite key for this press based on its type and teams involved
+    const typeTeamKey = `${normalizedPressType}-${press.fromTeamId}-${press.toTeamId}`;
     
-    // Only store one press per unique key
-    if (!uniquePresses.has(uniqueKey)) {
-      uniquePresses.set(uniqueKey, press);
+    // Check if we already have a press for this type+teams combination
+    if (!gameTypeGroups.has(typeTeamKey) || 
+        press.holeIndex > gameTypeGroups.get(typeTeamKey)!.holeIndex) {
+      // Keep this press if it's the first one we've seen of this type
+      // or if it's more recent (higher hole index) than the previous one
+      gameTypeGroups.set(typeTeamKey, press);
     }
   });
 
-  const filteredPresses = Array.from(uniquePresses.values());
+  // Convert the map values (most recent presses) to an array
+  const mostRecentPresses = Array.from(gameTypeGroups.values());
 
-  if (filteredPresses.length === 0) return null;
+  if (mostRecentPresses.length === 0) return null;
 
   return (
     <View style={[
       styles.container, 
       { paddingBottom: insets.bottom + 10 }
     ]}>
-      {filteredPresses.map(press => {
+      {mostRecentPresses.map(press => {
         const fromTeam = teams.find(team => team.id === press.fromTeamId);
         const toTeam = teams.find(team => team.id === press.toTeamId);
         
         if (!fromTeam || !toTeam) return null;
         
         const holeNumber = press.holeIndex + 1;
-        const pressTypeLabel = (() => {
-          const type = press.pressType;
-          if (type === 'front9' || type === 'front') return 'Front 9';
-          if (type === 'back9' || type === 'back') return 'Back 9';
-          if (type === 'total18' || type === 'total') return 'Total 18';
-          return type;
-        })();
+        const pressTypeLabel = getPressTypeLabel(press.pressType);
 
         return (
           <View 
-            key={press.id} 
+            key={`${press.fromTeamId}-${press.toTeamId}-${press.pressType}`} 
             style={[
               styles.notification, 
               { borderColor: fromTeam.color },
               // Add iOS-specific styling
               Platform.OS === 'ios' && styles.iosNotification
             ]}
-            accessibilityLabel={`New press from ${fromTeam.name} to ${toTeam.name} on hole ${holeNumber}`}
+            accessibilityLabel={`Press from ${fromTeam.name} to ${toTeam.name} on hole ${holeNumber}`}
             accessible={true}
           >
             <View style={[
@@ -106,6 +111,22 @@ const PressNotification: React.FC<PressNotificationProps> = ({
     </View>
   );
 };
+
+// Helper function to normalize press types to standard categories
+function getNormalizedPressType(pressType: string): string {
+  if (pressType.includes('front')) return 'front9';
+  if (pressType.includes('back')) return 'back9';
+  if (pressType.includes('total')) return 'total18';
+  return pressType;
+}
+
+// Helper function to get display label for press type
+function getPressTypeLabel(pressType: string): string {
+  if (pressType.includes('front')) return 'Front 9';
+  if (pressType.includes('back')) return 'Back 9';
+  if (pressType.includes('total')) return 'Total 18';
+  return pressType;
+}
 
 const styles = StyleSheet.create({
   container: {

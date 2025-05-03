@@ -458,8 +458,12 @@ export default function ScoreInputScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.push(`/match/${id}`)}>
-          <ChevronLeft size={24} color="#007AFF" />
+        <TouchableOpacity 
+          style={styles.exitButton} 
+          onPress={() => router.push(`/match/${id}`)}
+        >
+          <ChevronLeft size={20} color="#FFFFFF" />
+          <Text style={styles.exitButtonText}>Exit Round</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{match.title}</Text>
         <View style={styles.headerActions}>
@@ -639,10 +643,33 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
   },
+  exitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3B30',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    // iOS-specific shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+  },
+  exitButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 4,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333333',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
   },
   headerActions: {
     flexDirection: 'row',
