@@ -6,11 +6,11 @@ import {
   View, 
   TouchableOpacity, 
   Alert,
-  SafeAreaView,
   TextInput,
   ScrollView,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMatches } from '@/hooks/useMatches';
@@ -18,6 +18,9 @@ import { ChevronLeft, ArrowLeft, ArrowRight, DollarSign } from 'lucide-react-nat
 import PressSummaryModal from '@/components/match/PressSummaryModal';
 import StepPressModal from '@/components/match/StepPressModal';
 import { calculateMatchPlay, calculateStrokePlay } from '@/utils/helpers';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { getStatusBarPadding } from '@/utils/statusBarManager';
 
 // Define interfaces for type safety
 interface HoleScore {
@@ -439,17 +442,27 @@ export default function ScoreInputScreen() {
   
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <SafeAreaView style={styles.container} edges={['right', 'left']}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007AFF" />
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
   
   if (!match) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Match not found</Text>
-      </View>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <SafeAreaView style={styles.container} edges={['right', 'left']}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Match not found</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
   
@@ -457,181 +470,193 @@ export default function ScoreInputScreen() {
   const holeNumber = currentHoleIndex + 1;
   
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.exitButton} 
-          onPress={handleExitRound}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+    <SafeAreaProvider>
+      <StatusBar style="dark" />
+      <SafeAreaView style={styles.container} edges={['right', 'left']}>
+        <KeyboardAvoidingView 
+          style={{flex: 1}}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
-          <ChevronLeft size={20} color="#FFFFFF" />
-          <Text style={styles.exitButtonText}>Exit Round</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>{match.title}</Text>
-        
-        <View style={styles.headerActions}>
-          {match.enablePresses && match.presses.length > 0 && (
+          <View style={[
+            styles.header,
+            { paddingTop: Platform.OS === 'ios' ? getStatusBarPadding() : 12 }
+          ]}>
             <TouchableOpacity 
-              style={styles.pressButton} 
-              onPress={handleOpenPressSummary}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.exitButton} 
+              onPress={handleExitRound}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
             >
-              <DollarSign size={18} color="#FFFFFF" />
+              <ChevronLeft size={20} color="#FFFFFF" />
+              <Text style={styles.exitButtonText}>Exit Round</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity 
-            style={styles.scorecardButton} 
-            onPress={handleViewScorecard}
-            hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
-          >
-            <Text style={styles.scorecardButtonText}>View Scorecard</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.scoreInputContainer}>
-        <Text style={styles.holeTitle}>Enter Scores - Hole {holeNumber}</Text>
-        
-        <ScrollView style={styles.teamsContainer}>
-          {match.teams.map((team, idx) => {
-            // Use fixed team color based on team order (first team green, second team yellow)
-            const teamColor = teamFixedColors[team.id] || team.color;
             
-            return (
-              <View key={team.id} style={styles.teamRow}>
-                <View style={styles.teamInfo}>
-                  <View style={[styles.teamCircle, { backgroundColor: teamColor }]}>
-                    <Text style={styles.teamInitial}>
-                      {team.initial || team.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={styles.teamName}>{team.name}</Text>
-                </View>
+            <Text style={styles.headerTitle}>{match.title}</Text>
+            
+            <View style={styles.headerActions}>
+              {match.enablePresses && match.presses.length > 0 && (
+                <TouchableOpacity 
+                  style={styles.pressButton} 
+                  onPress={handleOpenPressSummary}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <DollarSign size={18} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={styles.scorecardButton} 
+                onPress={handleViewScorecard}
+                hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+              >
+                <Text style={styles.scorecardButtonText}>View Scorecard</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.scoreInputContainer}>
+            <Text style={styles.holeTitle}>Enter Scores - Hole {holeNumber}</Text>
+            
+            <ScrollView style={styles.teamsContainer}>
+              {match.teams.map((team, idx) => {
+                // Use fixed team color based on team order (first team green, second team yellow)
+                const teamColor = teamFixedColors[team.id] || team.color;
                 
-                <TextInput
-                  style={styles.scoreInput}
-                  keyboardType="numeric"
-                  maxLength={2}
-                  value={scores[team.id] || ''}
-                  onChangeText={(value) => handleScoreChange(team.id, value)}
-                  placeholder="0"
-                  placeholderTextColor="#888888"
-                />
-              </View>
-            );
-          })}
-        </ScrollView>
-        
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.navigationButton, 
-              currentHoleIndex === 0 && styles.disabledButton
-            ]} 
-            onPress={handlePrevHole}
-            disabled={currentHoleIndex === 0}
-          >
-            <ArrowLeft size={20} color={currentHoleIndex === 0 ? "#999999" : "#FFFFFF"} />
-            <Text style={[
-              styles.navigationButtonText,
-              currentHoleIndex === 0 && styles.disabledButtonText
-            ]}>
-              Previous Hole
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={handleSave}
-          >
-            <Text style={styles.saveButtonText}>Save Scores</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.navigationButton,
-              currentHoleIndex === 17 && styles.disabledButton
-            ]} 
-            onPress={handleNextHole}
-            disabled={currentHoleIndex === 17}
-          >
-            <Text style={[
-              styles.navigationButtonText,
-              currentHoleIndex === 17 && styles.disabledButtonText
-            ]}>
-              Next Hole
-            </Text>
-            <ArrowRight size={20} color={currentHoleIndex === 17 ? "#999999" : "#FFFFFF"} />
-          </TouchableOpacity>
-        </View>
-      </View>
+                return (
+                  <View key={team.id} style={styles.teamRow}>
+                    <View style={styles.teamInfo}>
+                      <View style={[styles.teamCircle, { backgroundColor: teamColor }]}>
+                        <Text style={styles.teamInitial}>
+                          {team.initial || team.name.charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={styles.teamName}>{team.name}</Text>
+                    </View>
+                    
+                    <TextInput
+                      style={styles.scoreInput}
+                      keyboardType="numeric"
+                      maxLength={2}
+                      value={scores[team.id] || ''}
+                      onChangeText={(value) => handleScoreChange(team.id, value)}
+                      placeholder="0"
+                      placeholderTextColor="#888888"
+                    />
+                  </View>
+                );
+              })}
+            </ScrollView>
+            
+            <View style={styles.navigationContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.navigationButton, 
+                  currentHoleIndex === 0 && styles.disabledButton
+                ]} 
+                onPress={handlePrevHole}
+                disabled={currentHoleIndex === 0}
+              >
+                <ArrowLeft size={20} color={currentHoleIndex === 0 ? "#999999" : "#FFFFFF"} />
+                <Text style={[
+                  styles.navigationButtonText,
+                  currentHoleIndex === 0 && styles.disabledButtonText
+                ]}>
+                  Previous Hole
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.saveButton} 
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Save Scores</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.navigationButton,
+                  currentHoleIndex === 17 && styles.disabledButton
+                ]} 
+                onPress={handleNextHole}
+                disabled={currentHoleIndex === 17}
+              >
+                <Text style={[
+                  styles.navigationButtonText,
+                  currentHoleIndex === 17 && styles.disabledButtonText
+                ]}>
+                  Next Hole
+                </Text>
+                <ArrowRight size={20} color={currentHoleIndex === 17 ? "#999999" : "#FFFFFF"} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-      {currentHoleSaved && currentHoleIndex < 17 && (
-        <View style={styles.nextHoleContainer}>
-          <TouchableOpacity 
-            style={styles.nextHoleButton}
-            onPress={handleNextHole}
-          >
-            <Text style={styles.nextHoleButtonText}>Next Hole</Text>
-            <ArrowRight size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      )}
+          {currentHoleSaved && currentHoleIndex < 17 && (
+            <View style={[styles.nextHoleContainer, { paddingBottom: Platform.OS === 'ios' ? 20 : 16 }]}>
+              <TouchableOpacity 
+                style={styles.nextHoleButton}
+                onPress={handleNextHole}
+              >
+                <Text style={styles.nextHoleButtonText}>Next Hole</Text>
+                <ArrowRight size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+          )}
 
-      {showPressSummary && match && (
-        <PressSummaryModal
-          isVisible={showPressSummary}
-          onClose={() => setShowPressSummary(false)}
-          match={{
-            ...match,
-            // Ensure the match object has the latest data with correctly flagged original bets
-            presses: match.presses.map(press => ({
-              ...press,
-              // Original bets start on hole 1 (holeIndex 0) for front9 and total18,
-              // or on hole 10 (holeIndex 9) for back9
-              isOriginalBet: (press.holeIndex === 0 && 
-                (press.pressType === 'front9' || 
-                 press.pressType === 'front' || 
-                 press.pressType === 'total18' || 
-                 press.pressType === 'total')) ||
-              (press.holeIndex === 9 && 
-                (press.pressType === 'back9' || 
-                 press.pressType === 'back'))
-            })),
-            holes: match.holes.map(hole => ({
-              ...hole,
-              presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
-            }))
-          }}
-          teamColors={FIXED_TEAM_COLORS}
-        />
-      )}
+          {showPressSummary && match && (
+            <PressSummaryModal
+              isVisible={showPressSummary}
+              onClose={() => setShowPressSummary(false)}
+              match={{
+                ...match,
+                // Ensure the match object has the latest data with correctly flagged original bets
+                presses: match.presses.map(press => ({
+                  ...press,
+                  // Original bets start on hole 1 (holeIndex 0) for front9 and total18,
+                  // or on hole 10 (holeIndex 9) for back9
+                  isOriginalBet: (press.holeIndex === 0 && 
+                    (press.pressType === 'front9' || 
+                     press.pressType === 'front' || 
+                     press.pressType === 'total18' || 
+                     press.pressType === 'total')) ||
+                  (press.holeIndex === 9 && 
+                    (press.pressType === 'back9' || 
+                     press.pressType === 'back'))
+                })),
+                holes: match.holes.map(hole => ({
+                  ...hole,
+                  presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
+                }))
+              }}
+              teamColors={FIXED_TEAM_COLORS}
+            />
+          )}
 
-      {showPressModal && match && currentHole && (
-        <StepPressModal
-          isVisible={showPressModal}
-          hole={currentHole}
-          teams={match.teams.map(team => ({
-            ...team,
-            color: teamFixedColors[team.id] || team.color || '#CCCCCC'
-          }))}
-          onClose={handlePressModalClose}
-          onSave={handleSavePress}
-          onDismissWithoutPress={handleDismissWithoutPress}
-          onSubmitAllPresses={handleSubmitAllPresses}
-          teamColors={FIXED_TEAM_COLORS}
-          gameFormats={match.gameFormats.map(format => ({
-            ...format,
-            label: format.type === 'front' ? 'Front 9' : 
-                   format.type === 'back' ? 'Back 9' : 
-                   format.type === 'total' ? 'Total 18' : format.type
-          }))}
-          matchStatus={pressModalInfo}
-        />
-      )}
-    </SafeAreaView>
+          {showPressModal && match && currentHole && (
+            <StepPressModal
+              isVisible={showPressModal}
+              hole={currentHole}
+              teams={match.teams.map(team => ({
+                ...team,
+                color: teamFixedColors[team.id] || team.color || '#CCCCCC'
+              }))}
+              onClose={handlePressModalClose}
+              onSave={handleSavePress}
+              onDismissWithoutPress={handleDismissWithoutPress}
+              onSubmitAllPresses={handleSubmitAllPresses}
+              teamColors={FIXED_TEAM_COLORS}
+              gameFormats={match.gameFormats.map(format => ({
+                ...format,
+                label: format.type === 'front' ? 'Front 9' : 
+                       format.type === 'back' ? 'Back 9' : 
+                       format.type === 'total' ? 'Total 18' : format.type
+              }))}
+              matchStatus={pressModalInfo}
+            />
+          )}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -660,13 +685,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 16,
-    // Improved iOS-specific shadow
+    // Enhanced iOS-specific shadow
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: '#FF3B30',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.25,
-        shadowRadius: 2,
+        shadowOpacity: 0.3,
+        shadowRadius: 2.5,
       },
       android: {
         elevation: 2,
@@ -703,10 +728,19 @@ const styles = StyleSheet.create({
   scorecardButton: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: Platform.OS === 'ios' ? 8 : 6,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    // iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3,
+      },
+    }),
   },
   scorecardButtonText: {
     fontSize: 14,
@@ -735,12 +769,25 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#FFFFFF',
     margin: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderRadius: Platform.OS === 'ios' ? 16 : 12,
+    // Enhanced iOS shadow styling
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+      },
+      android: {
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+      },
+    }),
   },
   holeTitle: {
     fontSize: 20,
@@ -788,27 +835,46 @@ const styles = StyleSheet.create({
   scoreInput: {
     width: 60,
     height: 48,
-    borderWidth: 1,
+    borderWidth: Platform.OS === 'ios' ? 0.5 : 1,
     borderColor: '#DDDDDD',
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Platform.OS === 'ios' ? '#F8F8F8' : '#F5F5F5',
     paddingHorizontal: 12,
     fontSize: 18,
     textAlign: 'center',
     color: '#333333',
+    // iOS form field-specific styling
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+      }
+    }),
   },
   navigationContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: Platform.OS === 'ios' ? 16 : 12,
   },
   navigationButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#007AFF',
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
+    // iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+      },
+    }),
   },
   navigationButtonText: {
     fontSize: 14,
@@ -820,8 +886,17 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: '#4CAF50',
     paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
+    // iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+      },
+    }),
   },
   saveButtonText: {
     fontSize: 16,
@@ -837,14 +912,28 @@ const styles = StyleSheet.create({
   nextHoleContainer: {
     padding: 16,
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        marginBottom: 10, // Add space for home indicator
+      },
+    }),
   },
   nextHoleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#007AFF',
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 12,
+    borderRadius: Platform.OS === 'ios' ? 12 : 8,
+    // iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+    }),
   },
   nextHoleButtonText: {
     fontSize: 16,

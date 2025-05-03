@@ -109,13 +109,13 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     margin: 1,
-    // iOS shadow enhancement
+    // Enhanced iOS shadow
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(0,0,0,0.3)',
+        shadowColor: 'rgba(0,0,0,0.5)',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.5,
-        shadowRadius: 1,
+        shadowOpacity: 0.7,
+        shadowRadius: 1.5,
       },
       android: {
         elevation: 2,
@@ -129,10 +129,11 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   iOSIndicator: {
-    shadowColor: 'rgba(0,0,0,0.4)',
+    // Enhanced iOS shadow styling
+    shadowColor: 'rgba(0,0,0,0.6)',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.6,
-    shadowRadius: 1.5,
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
   },
 });
 

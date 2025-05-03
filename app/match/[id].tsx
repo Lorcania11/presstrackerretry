@@ -7,8 +7,6 @@ import {
   TouchableOpacity, 
   Alert,
   ActivityIndicator,
-  SafeAreaView,
-  ScrollView,
   Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,6 +15,9 @@ import { Match as ContextMatch } from '@/context/MatchContext';
 import ScorecardFlow from '@/components/ScorecardScreen/ScorecardFlow';
 import PressSummaryModal from '@/components/match/PressSummaryModal';
 import { ChevronLeft, DollarSign, Edit3 } from 'lucide-react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { getStatusBarPadding } from '@/utils/statusBarManager';
 
 // Define interfaces for type safety
 interface HoleScore {
@@ -194,71 +195,74 @@ export default function MatchDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Better iOS touch target
-        >
-          <ChevronLeft size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{match.title}</Text>
-        <View style={styles.headerActions}>
-          {match.enablePresses && match.presses.length > 0 && (
-            <TouchableOpacity 
-              style={styles.pressButton} 
-              onPress={handleOpenPressSummary}
-              accessibilityLabel="View press summary"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} // Better iOS touch target
-            >
-              <DollarSign size={18} color="#FFFFFF" style={styles.pressButtonIcon} />
-              <Text style={styles.pressButtonText}>Press Log</Text>
-            </TouchableOpacity>
-          )}
+    <SafeAreaProvider>
+      <StatusBar style="dark" /> {/* Ensure status bar is visible on all content */}
+      <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
+        <View style={[
+          styles.header,
+          { paddingTop: Platform.OS === 'ios' ? getStatusBarPadding() : 4 }
+        ]}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => router.back()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ChevronLeft size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{match.title}</Text>
+          <View style={styles.headerActions}>
+            {match.enablePresses && match.presses.length > 0 && (
+              <TouchableOpacity 
+                style={styles.pressButton} 
+                onPress={handleOpenPressSummary}
+                accessibilityLabel="View press summary"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <DollarSign size={18} color="#FFFFFF" style={styles.pressButtonIcon} />
+                <Text style={styles.pressButtonText}>Press Log</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
-      
-      <View style={styles.contentContainer}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={handleOpenScorecard}
-        >
-          <Text style={styles.actionButtonText}>View Scorecard</Text>
-        </TouchableOpacity>
         
-        <TouchableOpacity
-          style={[styles.actionButton, styles.inputScoreButton]}
-          onPress={navigateToScoreInput}
-        >
-          <Edit3 size={18} color="#FFFFFF" style={styles.buttonIcon} />
-          <Text style={styles.actionButtonText}>Input Scores</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.contentContainer}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleOpenScorecard}
+          >
+            <Text style={styles.actionButtonText}>View Scorecard</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.actionButton, styles.inputScoreButton]}
+            onPress={navigateToScoreInput}
+          >
+            <Edit3 size={18} color="#FFFFFF" style={styles.buttonIcon} />
+            <Text style={styles.actionButtonText}>Input Scores</Text>
+          </TouchableOpacity>
+        </View>
 
-      {showPressSummary && match && (
-        <PressSummaryModal
-          isVisible={showPressSummary}
-          onClose={() => setShowPressSummary(false)}
-          match={{
-            ...match,
-            // Ensure the match object has the latest data with correctly flagged original bets
-            presses: match.presses.map(press => ({
-              ...press,
-              // Original bets start on hole 1 (holeIndex 0) for front9 and total18,
-              // or on hole 10 (holeIndex 9) for back9
-              isOriginalBet: (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
-                             (press.holeIndex === 9 && press.pressType === 'back9')
-            })),
-            holes: match.holes.map(hole => ({
-              ...hole,
-              presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
-            }))
-          }}
-          teamColors={FIXED_TEAM_COLORS}
-        />
-      )}
-    </SafeAreaView>
+        {showPressSummary && match && (
+          <PressSummaryModal
+            isVisible={showPressSummary}
+            onClose={() => setShowPressSummary(false)}
+            match={{
+              ...match,
+              presses: match.presses.map(press => ({
+                ...press,
+                isOriginalBet: (press.holeIndex === 0 && (press.pressType === 'front9' || press.pressType === 'total18')) ||
+                               (press.holeIndex === 9 && press.pressType === 'back9')
+              })),
+              holes: match.holes.map(hole => ({
+                ...hole,
+                presses: match.presses.filter(p => p.holeIndex === hole.number - 1)
+              }))
+            }}
+            teamColors={FIXED_TEAM_COLORS}
+          />
+        )}
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -276,6 +280,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+    ...Platform.select({
+      ios: {
+        paddingTop: 4,
+      },
+    }),
   },
   backButton: {
     padding: 8,
@@ -297,13 +306,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     justifyContent: 'center',
-    // iOS-specific shadow
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: '#FF9800',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.5,
+        shadowOpacity: 0.3,
+        shadowRadius: 2.5,
       },
       android: {
         elevation: 2,
@@ -344,20 +352,19 @@ const styles = StyleSheet.create({
   actionButton: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: Platform.OS === 'ios' ? 18 : 16,
+    borderRadius: Platform.OS === 'ios' ? 16 : 12,
     width: '80%',
     alignItems: 'center',
     marginVertical: 10,
     flexDirection: 'row',
     justifyContent: 'center',
-    // iOS-specific shadow
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
       },
       android: {
         elevation: 3,
@@ -366,6 +373,14 @@ const styles = StyleSheet.create({
   },
   inputScoreButton: {
     backgroundColor: '#4CAF50',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4CAF50',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+    }),
   },
   actionButtonText: {
     fontSize: 18,

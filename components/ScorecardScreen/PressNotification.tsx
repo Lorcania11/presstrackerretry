@@ -72,8 +72,8 @@ const PressNotification: React.FC<PressNotificationProps> = ({
 
   return (
     <View style={[
-      styles.container, 
-      { paddingBottom: insets.bottom + 10 }
+      styles.container,
+      { paddingBottom: Platform.OS === 'ios' ? Math.max(10, insets.bottom) : 10 }
     ]}>
       {mostRecentPresses.map(press => {
         const fromTeam = teams.find(team => team.id === press.fromTeamId);
@@ -160,9 +160,11 @@ const styles = StyleSheet.create({
     marginBottom: 8, // Add space between multiple notifications
   },
   iosNotification: {
-    // iOS-specific enhancements
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+    // Enhanced iOS-specific shadow styling
+    shadowColor: 'rgba(0,0,0,0.55)',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
     borderWidth: Platform.OS === 'ios' ? 0.5 : 1, // Thinner border on iOS
     paddingVertical: 10, // Slightly more padding for iOS
     // Blend mode for transparency effect that works well on iOS

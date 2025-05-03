@@ -97,7 +97,7 @@ export default function ScoreInputModal({
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 10 : 0}
       >
         <TouchableOpacity 
           style={styles.container} 
@@ -106,9 +106,15 @@ export default function ScoreInputModal({
         >
           <View style={[
             styles.modal, 
-            { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF' },
+            { 
+              backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+              maxHeight: '80%',
+              marginBottom: insets.bottom > 0 ? insets.bottom : 0,
+            },
             keyboardVisible && Platform.OS === 'ios' && { maxHeight: '60%' }
           ]}>
+            {Platform.OS === 'ios' && <View style={styles.dragHandle} />}
+            
             <View style={styles.header}>
               <Text style={[
                 styles.title, 
@@ -168,7 +174,10 @@ export default function ScoreInputModal({
               ))}
             </ScrollView>
             
-            <View style={styles.buttonRow}>
+            <View style={[
+              styles.buttonRow,
+              { marginBottom: Platform.OS === 'ios' && insets.bottom > 0 ? 8 : 24 }
+            ]}>
               <TouchableOpacity
                 style={[
                   styles.button, 
@@ -220,12 +229,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     maxHeight: '80%',
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
       },
       android: {
         elevation: 5,
@@ -237,6 +247,15 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
     }),
+  },
+  dragHandle: {
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 12,
   },
   header: {
     flexDirection: 'row',
@@ -271,6 +290,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    // Add iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+    }),
   },
   teamInitial: {
     color: '#FFFFFF',
@@ -290,9 +318,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 18,
     textAlign: 'center',
+    // Add iOS-specific shadow and styling
     ...Platform.select({
       ios: {
         paddingVertical: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
       }
     }),
   },
@@ -315,6 +348,15 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#007AFF',
+    // Add iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+    }),
   },
   buttonText: {
     fontSize: 16,

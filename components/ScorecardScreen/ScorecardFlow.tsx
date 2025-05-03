@@ -16,6 +16,8 @@ import { ArrowLeft } from 'lucide-react-native';
 import PressNotification from './PressNotification';
 import PressIndicator from './PressIndicator';
 import PressSummaryModal from '@/components/match/PressSummaryModal';
+import { getStatusBarPadding } from '@/utils/statusBarManager';
+import { StatusBar } from 'expo-status-bar';
 
 // Define fixed team colors (important for consistent team identification)
 const FIXED_TEAM_COLORS: Record<string, string> = {
@@ -167,20 +169,28 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['right', 'left', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['right', 'left']}>
+      <StatusBar style="dark" />
       <View style={[
         styles.header, 
-        { paddingTop: Platform.OS === 'ios' ? insets.top > 0 ? 0 : 8 : 8 }
+        { 
+          paddingTop: Platform.OS === 'ios' 
+            ? getStatusBarPadding() - insets.top 
+            : 8 
+        }
       ]}>
         <TouchableOpacity 
-          style={[styles.backButton, { marginLeft: insets.left }]} 
+          style={[
+            styles.backButton, 
+            { marginLeft: Platform.OS === 'ios' ? insets.left : 0 }
+          ]} 
           onPress={onBack}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Better iOS touch target
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <ArrowLeft size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Scorecard</Text>
-        <View style={{width: 40}} /> {/* Empty view for balanced header */}
+        <View style={{width: 40}} />
       </View>
       
       <View style={styles.toggleContainer}>
@@ -202,7 +212,12 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
         </TouchableOpacity>
       </View>
       
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: Math.max(16, insets.bottom)
+        }}
+      >
         <Animated.View style={[styles.scrollContent, { transform: [{ translateX: slideAnim }] }]}>
           <View style={styles.tableContainer}>
             {/* First Scorecard (Front 9) */}
@@ -377,12 +392,17 @@ const ScorecardFlow: React.FC<ScorecardProps> = ({
       </ScrollView>
       
       {/* Press Notifications Overlay */}
-      <PressNotification 
-        presses={pressesWithOriginalBetFlags} 
-        matchId={matchId} 
-        showBack9={showingBack9}
-        teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor, name: team.name }))}
-      />
+      <View style={[
+        styles.pressNotificationContainer,
+        { bottom: insets.bottom }
+      ]}>
+        <PressNotification 
+          presses={pressesWithOriginalBetFlags} 
+          matchId={matchId} 
+          showBack9={showingBack9}
+          teams={teamsWithFixedColors.map(team => ({ id: team.id, color: team.fixedColor, name: team.name }))}
+        />
+      </View>
 
       {showPressSummary && (
         <PressSummaryModal
@@ -413,7 +433,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
+    borderBottomWidth: Platform.OS === 'ios' ? 0.5 : 1,
     borderBottomColor: '#EEEEEE',
     zIndex: 10,
   },
@@ -438,21 +458,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginTop: 16,
-    borderRadius: 8,
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
     overflow: 'hidden',
-    // Add iOS-specific shadow
+    // Enhanced iOS-specific shadow
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3, 
       },
     }),
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -477,15 +500,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 20,
+    // Add subtle shadow for iOS
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+    }),
   },
   teamHeaderRow: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    borderTopLeftRadius: Platform.OS === 'ios' ? 10 : 8,
+    borderTopRightRadius: Platform.OS === 'ios' ? 10 : 8,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: Platform.OS === 'ios' ? 0.5 : 1,
     borderBottomColor: '#EEEEEE',
+    // Add subtle shadow for iOS
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+      },
+    }),
   },
   teamHeaderCell: {
     flex: 1,
@@ -517,13 +558,14 @@ const styles = StyleSheet.create({
   currentHoleText: {
     backgroundColor: '#007AFF',
     color: '#FFFFFF',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: Platform.OS === 'ios' ? 30 : 28,
+    height: Platform.OS === 'ios' ? 30 : 28,
+    borderRadius: Platform.OS === 'ios' ? 15 : 14,
     textAlign: 'center',
     textAlignVertical: 'center',
     overflow: 'hidden',
-    lineHeight: 28,
+    lineHeight: Platform.OS === 'ios' ? 30 : 28,
+    fontWeight: Platform.OS === 'ios' ? '600' : '500',
   },
   scoreCell: {
     flex: 1,
@@ -542,8 +584,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     paddingVertical: 12,
     marginTop: 1,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    borderBottomLeftRadius: Platform.OS === 'ios' ? 10 : 8,
+    borderBottomRightRadius: Platform.OS === 'ios' ? 10 : 8,
+    // Enhanced iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      },
+    }),
   },
   totalCell: {
     flex: 1,
@@ -567,6 +618,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
+    // Enhanced iOS-specific shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.25,
+        shadowRadius: 2,
+      },
+    }),
   },
   teamInitial: {
     color: '#FFFFFF',
@@ -584,6 +644,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#777777',
+  },
+  pressNotificationContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100,
   },
 });
 

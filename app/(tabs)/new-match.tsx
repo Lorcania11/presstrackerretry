@@ -9,6 +9,7 @@ import {
   Switch,
   Alert,
   Pressable,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { generateUniqueId } from '@/utils/helpers';
@@ -465,20 +466,36 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 48,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderWidth: Platform.OS === 'ios' ? 0.5 : 1,
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
     marginBottom: 16,
     paddingHorizontal: 12,
     fontSize: 16,
     backgroundColor: '#FFFFFF',
     color: '#333333',
-    borderColor: '#DDDDDD',
+    borderColor: Platform.OS === 'ios' ? '#E0E0E0' : '#DDDDDD',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+      }
+    }),
   },
   section: {
-    borderRadius: 12,
+    borderRadius: Platform.OS === 'ios' ? 14 : 12,
     marginBottom: 16,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+    }),
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -533,8 +550,8 @@ const styles = StyleSheet.create({
   },
   addTeamButton: {
     padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
+    borderWidth: Platform.OS === 'ios' ? 1.5 : 1,
     borderColor: '#007AFF',
     backgroundColor: 'transparent',
     alignItems: 'center',
@@ -553,10 +570,18 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      }
+    }),
   },
   confirmButton: {
     backgroundColor: '#007AFF',
@@ -581,10 +606,18 @@ const styles = StyleSheet.create({
   optionButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: Platform.OS === 'ios' ? 24 : 20,
     marginRight: 8,
     marginBottom: 8,
     backgroundColor: '#F0F0F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1,
+      }
+    }),
   },
   optionText: {
     color: '#333333',
@@ -592,6 +625,14 @@ const styles = StyleSheet.create({
   },
   selectedOption: {
     backgroundColor: '#007AFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      }
+    }),
   },
   selectedOptionText: {
     color: '#FFFFFF',
@@ -604,10 +645,18 @@ const styles = StyleSheet.create({
   gameFormatOption: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: Platform.OS === 'ios' ? 24 : 20,
     marginRight: 8,
     marginBottom: 8,
     backgroundColor: '#F0F0F0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1,
+      }
+    }),
   },
   gameFormatText: {
     color: '#333333',
@@ -631,6 +680,11 @@ const styles = StyleSheet.create({
   },
   betInputContainer: {
     marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        paddingVertical: 2,
+      }
+    }),
   },
   betLabel: {
     fontSize: 14,
@@ -652,11 +706,19 @@ const styles = StyleSheet.create({
   },
   createButton: {
     backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: Platform.OS === 'ios' ? 18 : 16,
+    borderRadius: Platform.OS === 'ios' ? 14 : 12,
     alignItems: 'center',
     marginTop: 16,
     marginBottom: 32,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+      }
+    }),
   },
   createButtonText: {
     color: '#FFFFFF',

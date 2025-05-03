@@ -9,9 +9,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { hasNotchOrDynamicIsland } from '@/utils/statusBarManager';
 
 interface Team {
   id: string;
@@ -481,9 +482,12 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
         }
       }}
     >
+      <StatusBar style="light" /> {/* Change status bar for modal */}
       <SafeAreaView style={{ 
         flex: 1, 
-        backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent' 
+        backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent',
+        paddingBottom: insets.bottom > 0 ? 0 : 10, // Only add padding if we don't have a home indicator
+        paddingTop: Platform.OS === 'ios' && hasNotchOrDynamicIsland() ? 0 : insets.top,
       }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -497,6 +501,8 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
                 Platform.OS === 'ios' && styles.iosModalContent
               ]}
             >
+              {Platform.OS === 'ios' && <View style={styles.dragHandle} />}
+              
               <View style={styles.modalHeader}>
                 <TouchableOpacity 
                   style={styles.backButton} 
@@ -532,7 +538,11 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.addPressButton,
-                    { marginBottom: Platform.OS === 'ios' ? 8 : 15 }
+                    { 
+                      marginBottom: Platform.OS === 'ios' 
+                        ? insets.bottom > 0 ? insets.bottom : 15
+                        : 15 
+                    }
                   ]}
                   onPress={handleSave}
                 >
@@ -576,10 +586,20 @@ const styles = StyleSheet.create({
   iosModalContent: {
     height: '70%',
     borderRadius: 12,
+    // Enhanced iOS shadows
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+  },
+  dragHandle: {
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignSelf: 'center',
+    marginTop: 8,
+    marginBottom: 4,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -631,6 +651,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginVertical: 5,
+    // Add iOS-specific shadows to team options
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3,
+      },
+    }),
   },
   teamText: {
     color: 'white',
@@ -649,6 +678,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    // Add iOS-specific shadows to team circles
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+    }),
   },
   teamInitial: {
     color: 'white',
@@ -710,7 +748,11 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         paddingVertical: 16,
-      }
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
     }),
   },
   addPressButtonText: {
@@ -723,6 +765,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+    // Add iOS-specific shadows
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+    }),
   },
   pressTypesTitle: {
     fontSize: 14,

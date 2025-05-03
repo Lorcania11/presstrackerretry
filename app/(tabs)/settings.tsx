@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Switch, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, Text, View, Switch, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useMatches } from '@/hooks/useMatches';
 import { Info, Moon, Share, Trash2, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 
@@ -133,17 +133,28 @@ const styles = StyleSheet.create({
     color: '#333333',
   },
   section: {
-    borderRadius: 12,
+    borderRadius: Platform.OS === 'ios' ? 14 : 12,
     marginBottom: 16,
     padding: 16,
     backgroundColor: '#FFFFFF',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    // Enhanced iOS shadow styling
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
   },
   sectionHeader: {
     fontSize: 16,
@@ -155,8 +166,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 12,
+    borderBottomWidth: Platform.OS === 'ios' ? 0.5 : 1,
     borderBottomColor: '#EEEEEE',
   },
   rowLabelContainer: {
@@ -173,18 +184,33 @@ const styles = StyleSheet.create({
     color: '#888888',
   },
   actionRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 12,
+    borderBottomWidth: Platform.OS === 'ios' ? 0.5 : 1,
     borderBottomColor: '#EEEEEE',
+    // iOS specific touch feedback styling
+    ...Platform.select({
+      ios: {
+        backgroundColor: '#FFFFFF',
+      }
+    }),
   },
   dangerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: Platform.OS === 'ios' ? 14 : 12,
     marginTop: 16,
     backgroundColor: '#FFEBEE',
+    // Enhanced iOS danger button shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#FF3B30',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+      }
+    }),
   },
   dangerButtonText: {
     color: '#FF3B30',

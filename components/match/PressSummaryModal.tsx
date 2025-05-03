@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronDown, ChevronUp, X, DollarSign } from 'lucide-react-native';
 import Modal from 'react-native-modal';
+import { StatusBar } from 'expo-status-bar';
+import { hasNotchOrDynamicIsland } from '@/utils/statusBarManager';
 
 interface PressSummaryModalProps {
   isVisible: boolean;
@@ -104,25 +106,30 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
       useNativeDriver={true}
       statusBarTranslucent
     >
+      <StatusBar style="light" /> {/* Change status bar to light content when modal is open */}
       <View style={[
         styles.container, 
-        { paddingTop: insets.top || 10, paddingBottom: insets.bottom || 10 }
+        { 
+          paddingTop: Platform.OS === 'ios' 
+            ? hasNotchOrDynamicIsland() ? insets.top : 10 
+            : insets.top || 10, 
+          paddingBottom: Math.max(insets.bottom + 10, 20)
+        }
       ]}>
+        {/* Add handle to help users understand the swipe gesture */}
+        {Platform.OS === 'ios' && <View style={styles.dragHandle} />}
+        
         <View style={styles.header}>
           <Text style={styles.title}>Press Summary</Text>
-          <TouchableOpacity 
-            style={styles.closeButton} 
-            onPress={onClose}
-            accessibilityLabel="Close press summary"
-            hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }} // Improve touch target
-          >
-            <X size={24} color="#333333" />
-          </TouchableOpacity>
+          <View style={styles.dragIndicator} />
         </View>
         
         <ScrollView 
           style={styles.content}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[
+            styles.contentContainer,
+            { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 }
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {/* Front 9 Section */}
@@ -131,19 +138,17 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
               <TouchableOpacity 
                 style={styles.sectionHeader}
                 onPress={() => toggleSection('front9')}
-                accessibilityLabel={expandedSections.front9 ? "Collapse Front 9" : "Expand Front 9"}
-                accessibilityRole="button"
+                activeOpacity={0.7}
               >
                 <Text style={styles.sectionTitle}>Front 9</Text>
                 {expandedSections.front9 ? 
                   <ChevronUp size={20} color="#333333" /> : 
-                  <ChevronDown size={20} color="#333333" />
-                }
+                  <ChevronDown size={20} color="#333333" />}
               </TouchableOpacity>
               
               {expandedSections.front9 && (
                 <View style={styles.sectionContent}>
-                  {processedPresses.front9.map((press) => renderPressItem(press))}
+                  {processedPresses.front9.map(press => renderPressItem(press))}
                 </View>
               )}
             </View>
@@ -155,19 +160,17 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
               <TouchableOpacity 
                 style={styles.sectionHeader}
                 onPress={() => toggleSection('back9')}
-                accessibilityLabel={expandedSections.back9 ? "Collapse Back 9" : "Expand Back 9"}
-                accessibilityRole="button"
+                activeOpacity={0.7}
               >
                 <Text style={styles.sectionTitle}>Back 9</Text>
                 {expandedSections.back9 ? 
                   <ChevronUp size={20} color="#333333" /> : 
-                  <ChevronDown size={20} color="#333333" />
-                }
+                  <ChevronDown size={20} color="#333333" />}
               </TouchableOpacity>
               
               {expandedSections.back9 && (
                 <View style={styles.sectionContent}>
-                  {processedPresses.back9.map((press) => renderPressItem(press))}
+                  {processedPresses.back9.map(press => renderPressItem(press))}
                 </View>
               )}
             </View>
@@ -179,30 +182,26 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
               <TouchableOpacity 
                 style={styles.sectionHeader}
                 onPress={() => toggleSection('total18')}
-                accessibilityLabel={expandedSections.total18 ? "Collapse Total 18" : "Expand Total 18"}
-                accessibilityRole="button"
+                activeOpacity={0.7}
               >
-                <Text style={styles.sectionTitle}>Total 18</Text>
+                <Text style={styles.sectionTitle}>Total Match</Text>
                 {expandedSections.total18 ? 
                   <ChevronUp size={20} color="#333333" /> : 
-                  <ChevronDown size={20} color="#333333" />
-                }
+                  <ChevronDown size={20} color="#333333" />}
               </TouchableOpacity>
               
               {expandedSections.total18 && (
                 <View style={styles.sectionContent}>
-                  {processedPresses.total18.map((press) => renderPressItem(press))}
+                  {processedPresses.total18.map(press => renderPressItem(press))}
                 </View>
               )}
             </View>
           )}
           
-          {/* Show message if no presses */}
-          {processedPresses.front9.length === 0 && 
-           processedPresses.back9.length === 0 && 
-           processedPresses.total18.length === 0 && (
+          {/* Empty state - no presses */}
+          {Object.values(processedPresses).every(arr => arr.length === 0) && (
             <View style={styles.emptyStateContainer}>
-              <Text style={styles.noPressesText}>No presses found for this match</Text>
+              <Text style={styles.noPressesText}>No presses found for this match.</Text>
             </View>
           )}
         </ScrollView>
@@ -243,7 +242,6 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
             />
             <Text style={styles.teamName}>{press.fromTeamName}</Text>
             <Text style={styles.pressingText}>pressing</Text>
-            
             <View 
               style={[
                 styles.teamIndicator, 
@@ -261,13 +259,15 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
         
         <View style={styles.pressDetails}>
           <Text style={styles.pressStarted}>
-            Started on hole {press.holeNumber}
+            {press.isOriginalBet ? 'Original bet' : `Press on hole ${press.holeNumber}`}
           </Text>
-          
-          <Text style={[styles.pressStatus, { color: statusColor }]}>
-            {press.status === 'in-progress' ? 'In Progress' : 
-             press.status === 'completed' && press.winner === 'tie' ? 'Tied' : 
-             'Completed'}
+          <Text 
+            style={[
+              styles.pressStatus,
+              { color: statusColor }
+            ]}
+          >
+            {press.status === 'completed' ? 'Completed' : 'In-progress'}
           </Text>
         </View>
         
@@ -286,10 +286,9 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
           >
             <Text 
               style={[
-                styles.winnerText, 
+                styles.winnerText,
                 { 
-                  color: press.netResult.includes('up') ? '#4CAF50' : 
-                         press.netResult === 'tied' ? '#888888' : '#FF9800'
+                  color: press.netResult.includes('up') ? '#4CAF50' : press.netResult === 'tied' ? '#888888' : '#FF9800' 
                 }
               ]}
             >
@@ -310,11 +309,13 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
           >
             <Text 
               style={[
-                styles.winnerText, 
+                styles.winnerText,
                 { color: winnerBorderColor }
               ]}
             >
-              {press.winner === press.fromTeamId ? press.fromTeamName : press.toTeamName} won
+              {press.winner === press.fromTeamId 
+                ? `${press.fromTeamName} wins`
+                : `${press.toTeamName} wins`}
             </Text>
           </View>
         )}
@@ -329,8 +330,13 @@ const PressSummaryModal: React.FC<PressSummaryModalProps> = ({
               }
             ]}
           >
-            <Text style={[styles.winnerText, { color: '#888888' }]}>
-              Tie - No winner
+            <Text 
+              style={[
+                styles.winnerText,
+                { color: '#888888' }
+              ]}
+            >
+              Tie - Press Carried
             </Text>
           </View>
         )}
@@ -419,14 +425,14 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
       let scoreCountEndHole = 0;
       
       if (normalizedPressType === 'front9') {
-        scoreCountStartHole = Math.max(press.holeIndex, 0); // Start from press hole for front9
-        scoreCountEndHole = 8; // End at hole 9 (index 8)
+        scoreCountStartHole = Math.max(press.holeIndex, 0);
+        scoreCountEndHole = 8;
       } else if (normalizedPressType === 'back9') {
-        scoreCountStartHole = Math.max(press.holeIndex, 9); // Start from press hole for back9
-        scoreCountEndHole = 17; // End at hole 18 (index 17)
+        scoreCountStartHole = Math.max(press.holeIndex, 9);
+        scoreCountEndHole = 17;
       } else if (normalizedPressType === 'total18') {
-        scoreCountStartHole = Math.max(press.holeIndex, 0); // Start from press hole for total18
-        scoreCountEndHole = 17; // End at hole 18 (index 17)
+        scoreCountStartHole = Math.max(press.holeIndex, 0);
+        scoreCountEndHole = 17;
       }
       
       // Find the last completed hole up to the end
@@ -458,12 +464,11 @@ function processPressesWithResults(match: PressSummaryModalProps['match'], teamC
       // Calculate who is up/down
       const holesPlayed = lastCompletedHole - scoreCountStartHole + 1;
       if (holesPlayed > 0) {
+        // In golf, lower score wins
         if (fromTeamScore < toTeamScore) {
-          const diff = toTeamScore - fromTeamScore;
-          netResult = `${teamMap[press.fromTeamId].name} ${diff} up`;
+          netResult = `${teamMap[press.fromTeamId].name} up by ${toTeamScore - fromTeamScore}`;
         } else if (toTeamScore < fromTeamScore) {
-          const diff = fromTeamScore - toTeamScore;
-          netResult = `${teamMap[press.toTeamId].name} ${diff} up`;
+          netResult = `${teamMap[press.toTeamId].name} up by ${fromTeamScore - toTeamScore}`;
         } else {
           netResult = 'tied';
         }
@@ -547,23 +552,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    // Use shadow for iOS, elevation for Android
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.15,
-        shadowRadius: 5,
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
       },
       android: {
         elevation: 5,
       },
     }),
   },
+  dragHandle: {
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignSelf: 'center',
+    marginTop: 6,
+    marginBottom: 4,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
@@ -572,6 +586,15 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    position: 'relative',
+  },
+  dragIndicator: {
+    position: 'absolute',
+    top: 8,
+    width: 40,
+    height: 5,
+    backgroundColor: '#DDDDDD',
+    borderRadius: 2.5,
   },
   title: {
     fontSize: 20,
@@ -592,12 +615,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 16,
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
       },
       android: {
         elevation: 2,
@@ -626,13 +650,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    // iOS specific shadow
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 1,
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
       }
     }),
   },
@@ -658,6 +682,15 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     marginRight: 6,
+    // Add iOS shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 1,
+      },
+    }),
   },
   teamName: {
     fontSize: 14,
@@ -678,6 +711,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    // Add iOS shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1.5,
+      },
+    }),
   },
   betAmountText: {
     fontSize: 14,
@@ -705,6 +747,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     alignSelf: 'flex-start',
+    // Add iOS shadow
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+    }),
   },
   winnerText: {
     fontSize: 14,
@@ -723,12 +774,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 4,
       },
       android: {
         elevation: 2,

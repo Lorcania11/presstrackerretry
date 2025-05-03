@@ -20,6 +20,8 @@ import {
   Clock,
   ChevronRight,
 } from 'lucide-react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getStatusBarPadding } from '@/utils/statusBarManager';
 
 interface QuickAction {
   icon: React.ReactNode;
@@ -31,6 +33,8 @@ interface QuickAction {
 
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const statusBarPadding = getStatusBarPadding();
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -88,6 +92,9 @@ export default function HomeScreen() {
   return (
     <ScrollView 
       style={styles.container}
+      contentContainerStyle={{
+        paddingBottom: Math.max(16, insets.bottom)
+      }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -96,7 +103,10 @@ export default function HomeScreen() {
         />
       }
     >
-      <View style={styles.header}>
+      <View style={[
+        styles.header, 
+        { paddingTop: Platform.OS === 'ios' ? statusBarPadding : 20 }
+      ]}>
         <View>
           <Text style={styles.welcomeText}>Golf Match Tracker</Text>
           <Text style={styles.subText}>Welcome back!</Text>
@@ -203,7 +213,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    paddingTop: Platform.OS === 'web' ? 20 : 60,
   },
   welcomeText: {
     fontSize: 24,
@@ -229,13 +238,14 @@ const styles = StyleSheet.create({
   quickActionCard: {
     width: '47%',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: Platform.OS === 'ios' ? 16 : 14,
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
       },
       android: {
         elevation: 2,
@@ -262,14 +272,15 @@ const styles = StyleSheet.create({
   card: {
     margin: 10,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: Platform.OS === 'ios' ? 16 : 14,
     backgroundColor: '#FFFFFF',
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
       },
       android: {
         elevation: 2,
@@ -312,6 +323,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    // Enhanced iOS shadow for activity icon
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1.5,
+      }
+    }),
   },
   activityContent: {
     flex: 1,
@@ -330,7 +350,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   statsCard: {
-    marginBottom: 20,
+    marginBottom: Platform.OS === 'ios' ? 30 : 20,
   },
   statsGrid: {
     flexDirection: 'row',

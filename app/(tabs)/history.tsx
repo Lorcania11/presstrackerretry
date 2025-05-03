@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Calendar, Search } from 'lucide-react-native';
 import { useMatches } from '@/hooks/useMatches';
@@ -169,28 +169,46 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 44,
-    borderWidth: 1,
-    borderColor: '#DDDDDD',
-    borderRadius: 8,
+    borderWidth: Platform.OS === 'ios' ? 0.5 : 1,
+    borderColor: Platform.OS === 'ios' ? '#E0E0E0' : '#DDDDDD',
+    borderRadius: Platform.OS === 'ios' ? 10 : 8,
     paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      }
+    }),
   },
   listContent: {
     paddingBottom: 20,
   },
   matchCard: {
     padding: 16,
-    borderRadius: 12,
+    borderRadius: Platform.OS === 'ios' ? 14 : 12,
     marginBottom: 16,
     backgroundColor: '#FFFFFF',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        shadowOffset: {
+          width: 0,
+          height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
   },
   matchHeader: {
     flexDirection: 'row',
@@ -207,7 +225,15 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: Platform.OS === 'ios' ? 6 : 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 1,
+      }
+    }),
   },
   statusText: {
     fontSize: 12,
@@ -236,7 +262,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F8FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: Platform.OS === 'ios' ? 6 : 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#007AFF',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 1,
+      }
+    }),
   },
   formatText: {
     fontSize: 12,
