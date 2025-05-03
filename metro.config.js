@@ -1,11 +1,12 @@
 const { getDefaultConfig } = require('expo/metro-config');
 
 /**
- * Metro configuration
- * https://facebook.github.io/metro/docs/configuration
+ * Metro configuration for React Native
+ * https://github.com/facebook/react-native
  *
- * @type {import('metro-config').MetroConfig}
+ * @format
  */
+
 const config = getDefaultConfig(__dirname);
 
 // Ensure we don't have the problematic runInspectorProxy option
@@ -18,5 +19,8 @@ config.resolver.sourceExts = [
   'js', 'jsx', 'ts', 'tsx', 'json', 
   'cjs', 'mjs', 'wasm'
 ];
+
+// Ensure we handle SVG files properly
+config.resolver.assetExts.push('svg');
 
 module.exports = config;

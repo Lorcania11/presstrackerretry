@@ -1,52 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Modal, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert, 
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DollarSign, ChevronLeft, ChevronRight, Check, X } from 'lucide-react-native';
+import Modal from 'react-native-modal';
 import { StatusBar } from 'expo-status-bar';
 import { hasNotchOrCutout } from '@/utils/statusBarManager';
 
 interface Team {
   id: string;
   name: string;
+  initial?: string;
   color?: string;
 }
 
-interface Hole {
-  number: number;
-  scores: Array<{teamId: string, score: number | null}>;
-  presses: Press[];
-  isComplete: boolean;
-}
-
-interface Press {
-  id: string;
-  fromTeamId: string;
-  toTeamId: string;
-  holeIndex: number;
-  pressType: string;
+interface HoleScore {
+  teamId: string;
+  score: number | null;
 }
 
 interface GameFormat {
   type: string;
+  label: string;
   betAmount: number;
-  label?: string; // Added for display purposes
 }
 
-interface GameType {
-  id: string;
-  name: string;
-  amount: string;
-  selected: boolean;
-  isAvailable?: boolean; // New property to track availability
+interface Hole {
+  number: number;
+  scores: HoleScore[];
+  isComplete: boolean;
 }
 
 interface StepPressModalProps {
@@ -54,15 +35,15 @@ interface StepPressModalProps {
   hole: Hole;
   teams: Team[];
   onClose: () => void;
-  onSave: (press: Omit<Press, 'id'>) => void;
-  teamColors?: {[key: string]: string};
-  gameFormats?: GameFormat[]; // Add this prop to receive game formats from match creation
-  matchStatus?: {
+  onSave: (press: { fromTeamId: string; toTeamId: string; holeIndex: number; pressType: string }) => void;
+  onDismissWithoutPress: () => void;
+  onSubmitAllPresses?: () => void;
+  teamColors: Record<string, string>;
+  gameFormats: GameFormat[];
+  matchStatus: {
     statusMessage: string;
     gameType: string;
   } | null;
-  onDismissWithoutPress?: () => void; // Add this callback for when modal is closed without presses
-  onSubmitAllPresses?: () => void; // Add new callback for submitting all presses
 }
 
 const StepPressModal: React.FC<StepPressModalProps> = ({
@@ -71,528 +52,309 @@ const StepPressModal: React.FC<StepPressModalProps> = ({
   teams,
   onClose,
   onSave,
-  teamColors = {
-    '1': '#4CAE4F', // Default green for Team 1
-    '2': '#FFC105', // Default yellow for Team 2
-  },
-  gameFormats = [], // Default to empty array if not provided
-  matchStatus = null,
-  onDismissWithoutPress = () => {}, // Default empty function
-  onSubmitAllPresses = () => {} // Default empty function
+  onDismissWithoutPress,
+  onSubmitAllPresses,
+  teamColors,
+  gameFormats,
+  matchStatus,
 }) => {
   const insets = useSafeAreaInsets();
-  const [fromTeamId, setFromTeamId] = useState<string | null>(null);
-  const [toTeamId, setToTeamId] = useState<string | null>(null);
-  const [addedPresses, setAddedPresses] = useState<Array<{
-    fromTeamId: string;
-    toTeamId: string;
-    pressType: string;
-  }>>([]);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-
-  const defaultGameTypes = [
-    { id: 'front9', name: 'Front 9', amount: '$10', selected: false },
-    { id: 'back9', name: 'Back 9', amount: '$10', selected: false },
-    { id: 'total18', name: 'Total 18', amount: '$10', selected: false },
-  ];
-
-  const mapGameFormatsToTypes = () => {
-    if (gameFormats.length === 0) return defaultGameTypes;
-
-    // Filter game types based on current hole
-    return gameFormats.map(format => {
-      let name = 'Unknown';
-      let id = format.type;
-      let isAvailable = true;
-
-      if (format.type === 'front') {
-        name = 'Front 9';
-        id = 'front9';
-        // Only available on holes 1-9
-        isAvailable = hole.number >= 1 && hole.number <= 9;
-      } else if (format.type === 'back') {
-        name = 'Back 9';
-        id = 'back9';
-        // Only available on holes 10-18
-        isAvailable = hole.number >= 10 && hole.number <= 18;
-      } else if (format.type === 'total') {
-        name = 'Total 18';
-        id = 'total18';
-        // For total, allow pressing on any hole
-        // But logically restrict pressing on the front 9 holes (1-9)
-        // or the back 9 holes (10-18)
-        isAvailable = (hole.number >= 1 && hole.number <= 9) || 
-                      (hole.number >= 10 && hole.number <= 18);
-      } else if (format.label) {
-        name = format.label;
-      }
-
-      return {
-        id,
-        name,
-        amount: `$${format.betAmount}`,
-        selected: false,
-        isAvailable // New property to track availability
-      };
-    }).filter(gameType => gameType.isAvailable); // Filter out unavailable game types
-  };
-
-  const [gameTypes, setGameTypes] = useState<GameType[]>(mapGameFormatsToTypes());
-
+  const [step, setStep] = useState(1);
+  const [fromTeam, setFromTeam] = useState<Team | null>(null);
+  const [toTeam, setToTeam] = useState<Team | null>(null);
+  const [pressType, setPressType] = useState<string | null>(null);
+  
+  // Reset the state when modal becomes visible
   useEffect(() => {
-    // Enhanced iOS-specific back button/gesture handling
-    if (Platform.OS === 'ios') {
-      // This code will improve the modal's behavior on iOS
-      const handleIOSBackAction = () => {
-        if (showConfirmation) {
-          setShowConfirmation(false);
-          return true;
-        }
-        if (fromTeamId && toTeamId) {
-          setFromTeamId(null);
-          setToTeamId(null);
-          return true;
-        }
-        resetAndClose();
-        return true;
-      };
-      
-      // In a real implementation, we would set up listeners here
-      // And return a cleanup function
-      
-      return () => {
-        // Cleanup function
-      };
+    if (isVisible) {
+      setStep(1);
+      setFromTeam(null);
+      setToTeam(null);
+      setPressType(null);
     }
-  }, [showConfirmation, fromTeamId, toTeamId]);
+  }, [isVisible]);
 
-  const handleSave = () => {
-    if (!fromTeamId || !toTeamId) {
-      Alert.alert('Error', 'Please select teams for the press');
-      return;
-    }
-
-    const selectedGameTypes = gameTypes.filter(gt => gt.selected);
-    if (selectedGameTypes.length === 0) {
-      Alert.alert('Error', 'Please select at least one game type');
-      return;
-    }
-
-    // Create a separate press for each selected game type
-    const newPresses = selectedGameTypes.map(gameType => ({
-      fromTeamId,
-      toTeamId,
-      pressType: gameType.id,
-      holeIndex: hole.number - 1
-    }));
-
-    // Add all new presses to the array
-    setAddedPresses([...addedPresses, ...newPresses]);
-
-    // Reset selection state
-    setFromTeamId(null);
-    setToTeamId(null);
-    setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
-
-    // Show confirmation after adding presses
-    setShowConfirmation(true);
-  };
-
-  const handleSubmitAllPresses = () => {
-    // Make sure each added press is submitted individually
-    addedPresses.forEach(press => {
-      onSave({
-        fromTeamId: press.fromTeamId,
-        toTeamId: press.toTeamId,
-        holeIndex: hole.number - 1,
-        pressType: press.pressType,
-      });
-    });
-
-    // Close the modal first to ensure UI state is clean
-    onClose();
-    
-    // Use a short timeout to ensure modal is fully closed before navigation
-    setTimeout(() => {
-      // Notify parent to advance to next hole after submitting all presses
-      onSubmitAllPresses();
-    }, Platform.OS === 'ios' ? 300 : 100);
-  };
-
-  const resetAndClose = () => {
-    // Check if we've added any presses
-    const shouldAdvanceToNextHole = addedPresses.length === 0;
-    
-    // Reset state
-    setFromTeamId(null);
-    setToTeamId(null);
-    setGameTypes(gameTypes.map(gt => ({ ...gt, selected: false })));
-    setAddedPresses([]);
-    setShowConfirmation(false);
-    
-    // Close modal
-    onClose();
-    
-    // If no presses were added and we should advance, use timeout to ensure modal is closed first
-    if (shouldAdvanceToNextHole) {
-      setTimeout(() => {
-        onDismissWithoutPress();
-      }, Platform.OS === 'ios' ? 300 : 100);
-    }
-  };
-
-  const handleBack = () => {
-    if (showConfirmation) {
-      setShowConfirmation(false);
-      return;
-    }
-
-    if (fromTeamId && toTeamId) {
-      setFromTeamId(null);
-      setToTeamId(null);
-      return;
-    }
-
-    resetAndClose();
-  };
-
-  const toggleGameType = (id: string) => {
-    setGameTypes(gameTypes.map(gt => 
-      gt.id === id ? { ...gt, selected: !gt.selected } : gt
-    ));
-  };
-
-  const getCurrentStep = () => {
-    if (showConfirmation) return 4;
-    if (!fromTeamId) return 1;
-    if (!toTeamId) return 2;
-    return 3;
-  };
-
-  const currentStep = getCurrentStep();
-
-  const getTeamName = (id: string): string => {
-    return teams.find(team => team.id === id)?.name || 'Unknown Team';
-  };
-
-  const getGameTypeName = (id: string): string => {
-    return gameTypes.find(gt => gt.id === id)?.name || id;
-  };
-
-  const renderConfirmationStep = () => {
-    const pressesByTeam: { [key: string]: Array<{ toTeamId: string, pressTypes: string[] }> } = {};
-
-    addedPresses.forEach(press => {
-      if (!pressesByTeam[press.fromTeamId]) {
-        pressesByTeam[press.fromTeamId] = [];
-      }
-
-      const existingToTeam = pressesByTeam[press.fromTeamId].find(p => p.toTeamId === press.toTeamId);
-
-      if (existingToTeam) {
-        existingToTeam.pressTypes.push(press.pressType);
-      } else {
-        pressesByTeam[press.fromTeamId].push({
-          toTeamId: press.toTeamId,
-          pressTypes: [press.pressType]
+  const handleNextStep = () => {
+    if (step < 3) {
+      setStep(step + 1);
+    } else {
+      // Submit the press
+      if (fromTeam && toTeam && pressType) {
+        onSave({
+          fromTeamId: fromTeam.id,
+          toTeamId: toTeam.id,
+          holeIndex: hole.number - 1, // Convert to 0-indexed
+          pressType: pressType,
         });
+        // Reset for next press
+        setStep(1);
+        setFromTeam(null);
+        setToTeam(null);
+        setPressType(null);
       }
-    });
-
-    return (
-      <ScrollView>
-        <Text style={styles.pressDetailsTitle}>Presses Added</Text>
-
-        {Object.keys(pressesByTeam).map(fromId => {
-          const fromTeam = teams.find(t => t.id === fromId);
-          const fromTeamIndex = teams.findIndex(t => t.id === fromId);
-          const fromTeamColor = teamColors[(fromTeamIndex + 1).toString()] || fromTeam?.color || '#4CAE4F';
-
-          return pressesByTeam[fromId].map((toTeamData, idx) => {
-            const toTeam = teams.find(t => t.id === toTeamData.toTeamId);
-            const toTeamIndex = teams.findIndex(t => t.id === toTeamData.toTeamId);
-            const toTeamColor = teamColors[(toTeamIndex + 1).toString()] || toTeam?.color || '#FFC105';
-
-            return (
-              <View key={`${fromId}-${toTeamData.toTeamId}-${idx}`} style={styles.confirmationItem}>
-                <View style={styles.teamRow}>
-                  <View style={[styles.teamCircle, { backgroundColor: fromTeamColor }]}>
-                    <Text style={styles.teamInitial}>
-                      {fromTeam?.name?.charAt(0) || 'T'}
-                    </Text>
-                  </View>
-                  <Text style={styles.toText}>pressing</Text>
-                  <View style={[styles.teamCircle, { backgroundColor: toTeamColor }]}>
-                    <Text style={styles.teamInitial}>
-                      {toTeam?.name?.charAt(0) || 'T'}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.pressTypesTitle}>Game Types:</Text>
-                <View style={styles.pressTypeList}>
-                  {toTeamData.pressTypes.map((type, typeIdx) => (
-                    <Text key={`type-${typeIdx}`} style={styles.pressTypeItem}>
-                      • {getGameTypeName(type)}
-                    </Text>
-                  ))}
-                </View>
-              </View>
-            );
-          });
-        })}
-
-        <TouchableOpacity
-          style={styles.addAnotherButton}
-          onPress={() => setShowConfirmation(false)}
-        >
-          <Text style={styles.addAnotherButtonText}>Add Another Press</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={handleSubmitAllPresses}
-        >
-          <Text style={styles.submitButtonText}>Submit All Presses</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
+    }
   };
 
-  const renderTeamSelectionStep = () => (
-    <ScrollView>
-      <Text style={styles.pressDetailsTitle}>Who's Pressing?</Text>
+  const handlePrevStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    } else {
+      // Exit the modal if going back from first step
+      onClose();
+    }
+  };
 
-      {matchStatus && (
-        <View style={styles.matchStatusContainer}>
-          <Text style={styles.matchStatusTitle}>Current Match Status:</Text>
-          <Text style={styles.matchStatusMessage}>{matchStatus.statusMessage}</Text>
-        </View>
-      )}
+  const handleSelectFromTeam = (team: Team) => {
+    setFromTeam(team);
+    handleNextStep();
+  };
 
-      <View style={styles.teamsContainer}>
-        {teams.map((pressingTeam, pressingIdx) => {
-          return teams
-            .filter(t => t.id !== pressingTeam.id)
-            .map((targetTeam, targetIdx) => {
-              const pressingTeamColor = teamColors[(pressingIdx + 1).toString()] || pressingTeam.color || '#888888';
+  const handleSelectToTeam = (team: Team) => {
+    setToTeam(team);
+    handleNextStep();
+  };
 
-              return (
-                <TouchableOpacity
-                  key={`${pressingTeam.id}-${targetTeam.id}`}
-                  style={[
-                    styles.teamOption,
-                    { backgroundColor: pressingTeamColor }
-                  ]}
-                  onPress={() => {
-                    setFromTeamId(pressingTeam.id);
-                    setToTeamId(targetTeam.id);
-                  }}
-                >
-                  <Text style={styles.teamText}>
-                    {pressingTeam.name} pressing {targetTeam.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            });
-        })}
-      </View>
-    </ScrollView>
-  );
+  const handleSelectPressType = (type: string) => {
+    setPressType(type);
+    handleNextStep();
+  };
 
-  const renderGameTypeSelectionStep = () => {
-    const fromTeam = teams.find(t => t.id === fromTeamId);
-    const toTeam = teams.find(t => t.id === toTeamId);
-    const fromTeamIndex = teams.findIndex(t => t.id === fromTeamId);
-    const toTeamIndex = teams.findIndex(t => t.id === toTeamId);
+  const handleDismiss = () => {
+    onDismissWithoutPress();
+    onClose();
+  };
 
-    const fromTeamColor = teamColors[(fromTeamIndex + 1).toString()] || fromTeam?.color || '#4CAE4F';
-    const toTeamColor = teamColors[(toTeamIndex + 1).toString()] || toTeam?.color || '#FFC105';
+  const handleSubmitAll = () => {
+    if (onSubmitAllPresses) {
+      onSubmitAllPresses();
+    }
+    onClose();
+  };
 
-    return (
-      <ScrollView>
-        <Text style={styles.pressDetailsTitle}>Press Details</Text>
-
-        <View style={styles.teamRow}>
-          <View style={[styles.teamCircle, { backgroundColor: fromTeamColor }]}>
-            <Text style={styles.teamInitial}>
-              {fromTeam?.name?.charAt(0) || 'T'}
-            </Text>
+  const renderStepContent = () => {
+    switch (step) {
+      case 1:
+        return (
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Who's pressing?</Text>
+            <Text style={styles.stepDescription}>Select the team that is pressing another team</Text>
+            
+            <View style={styles.teamsContainer}>
+              {teams.map((team) => {
+                // Use fixed team color based on team order (from teamColors)
+                const teamColor = teamColors[teams.indexOf(team) + 1] || team.color || '#CCCCCC';
+                
+                return (
+                  <TouchableOpacity
+                    key={team.id}
+                    style={[styles.teamButton, { backgroundColor: teamColor }]}
+                    onPress={() => handleSelectFromTeam(team)}
+                  >
+                    <Text style={styles.teamInitial}>
+                      {team.initial || team.name.charAt(0).toUpperCase()}
+                    </Text>
+                    <Text style={styles.teamName}>{team.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            
+            {matchStatus && (
+              <View style={styles.matchStatusContainer}>
+                <Text style={styles.matchStatusLabel}>Current Match Status:</Text>
+                <Text style={styles.matchStatusValue}>{matchStatus.statusMessage}</Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.toText}>pressing</Text>
-          <View style={[styles.teamCircle, { backgroundColor: toTeamColor }]}>
-            <Text style={styles.teamInitial}>
-              {toTeam?.name?.charAt(0) || 'T'}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.selectGameTypesTitle}>Select Game Types</Text>
+        );
         
-        <Text style={styles.pressInfoText}>
-          Press when a team is losing to extend the bet and attempt to recover
-        </Text>
-
-        {gameTypes.length === 0 ? (
-          <Text style={styles.noGameTypesText}>No available press types for hole {hole.number}</Text>
-        ) : (
-          <View style={styles.gameTypesContainer}>
-            {gameTypes.map((gameType) => (
-              <TouchableOpacity
-                key={gameType.id}
-                style={styles.gameTypeRow}
-                onPress={() => toggleGameType(gameType.id)}
-              >
-                <View style={styles.gameTypeInfo}>
-                  <Text style={styles.gameTypeName}>{gameType.name}</Text>
-                  <Text style={styles.gameTypeAmount}>{gameType.amount}</Text>
-                </View>
-
-                <View style={[
-                  styles.toggleButton,
-                  gameType.selected && styles.toggleButtonSelected
-                ]} />
-              </TouchableOpacity>
-            ))}
+      case 2:
+        return (
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Who's being pressed?</Text>
+            <Text style={styles.stepDescription}>
+              {fromTeam?.name} is pressing...
+            </Text>
+            
+            <View style={styles.teamsContainer}>
+              {teams.filter(t => t.id !== fromTeam?.id).map((team) => {
+                // Use fixed team color based on team order (from teamColors)
+                const teamColor = teamColors[teams.indexOf(team) + 1] || team.color || '#CCCCCC';
+                
+                return (
+                  <TouchableOpacity
+                    key={team.id}
+                    style={[styles.teamButton, { backgroundColor: teamColor }]}
+                    onPress={() => handleSelectToTeam(team)}
+                  >
+                    <Text style={styles.teamInitial}>
+                      {team.initial || team.name.charAt(0).toUpperCase()}
+                    </Text>
+                    <Text style={styles.teamName}>{team.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        )}
-      </ScrollView>
-    );
+        );
+        
+      case 3:
+        return (
+          <View style={styles.stepContent}>
+            <Text style={styles.stepTitle}>Press Type</Text>
+            <Text style={styles.stepDescription}>
+              {fromTeam?.name} is pressing {toTeam?.name} on...
+            </Text>
+            
+            <View style={styles.pressTypesContainer}>
+              {gameFormats.map((format) => (
+                <TouchableOpacity
+                  key={format.type}
+                  style={styles.pressTypeButton}
+                  onPress={() => handleSelectPressType(format.type)}
+                >
+                  <Text style={styles.pressTypeLabel}>{format.label}</Text>
+                  <View style={styles.betAmountContainer}>
+                    <DollarSign size={14} color="#333333" />
+                    <Text style={styles.betAmount}>{format.betAmount}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+        
+      default:
+        return null;
+    }
   };
 
   return (
     <Modal
-      transparent={true}
-      visible={isVisible}
-      animationType="slide"
-      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : undefined}
-      onRequestClose={() => {
-        // Enhanced for iOS - ensures proper behavior when using hardware back or swipe
-        if (Platform.OS === 'ios') {
-          // For iOS, we want a smoother dismissal
-          if (showConfirmation) {
-            setShowConfirmation(false);
-          } else if (fromTeamId && toTeamId) {
-            setFromTeamId(null);
-            setToTeamId(null);
-          } else {
-            resetAndClose();
-          }
-        } else {
-          // For Android, we can just reset and close
-          resetAndClose();
-        }
-      }}
+      isVisible={isVisible}
+      style={styles.modalContainer}
+      backdropOpacity={0.5}
+      onBackdropPress={handleDismiss}
+      onBackButtonPress={handleDismiss}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      swipeDirection="down"
+      onSwipeComplete={handleDismiss}
+      propagateSwipe={true}
+      avoidKeyboard={true}
+      useNativeDriver={true}
+      statusBarTranslucent
     >
-      <StatusBar style="light" /> {/* Change status bar for modal */}
-      <SafeAreaView style={{ 
-        flex: 1, 
-        backgroundColor: Platform.OS === 'ios' ? 'rgba(0,0,0,0.5)' : 'transparent',
-        paddingBottom: insets.bottom > 0 ? 0 : 10, // Only add padding if we don't have a home indicator
-        paddingTop: Platform.OS === 'ios' && hasNotchOrCutout() ? 0 : insets.top,
-      }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+      <StatusBar style="light" />
+      <View style={[
+        styles.container, 
+        { 
+          paddingTop: Platform.OS === 'ios' 
+            ? hasNotchOrCutout() ? insets.top : 10 
+            : insets.top || 10, 
+          paddingBottom: Math.max(insets.bottom + 10, 20)
+        }
+      ]}>
+        {/* Add handle to help users understand the swipe gesture */}
+        {Platform.OS === 'ios' && <View style={styles.dragHandle} />}
+        
+        <View style={styles.header}>
+          <Text style={styles.title}>New Press - Hole {hole.number}</Text>
+        </View>
+        
+        <ScrollView 
+          style={styles.content}
+          contentContainerStyle={[
+            styles.contentContainer,
+            { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 }
+          ]}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.modalOverlay}>
-            <View 
-              style={[
-                styles.modalContent,
-                Platform.OS === 'ios' && styles.iosModalContent
-              ]}
-            >
-              {Platform.OS === 'ios' && <View style={styles.dragHandle} />}
-              
-              <View style={styles.modalHeader}>
-                <TouchableOpacity 
-                  style={styles.backButton} 
-                  onPress={handleBack}
-                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                >
-                  <Text style={styles.backButtonText}>
-                    {showConfirmation ? 'Add More' : 'Back'}
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>
-                  {showConfirmation ? 'Review Presses' : 'Add Press'}
-                </Text>
-                <TouchableOpacity 
-                  style={styles.closeButton} 
-                  onPress={resetAndClose}
-                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                >
-                  <Text style={styles.closeButtonText}>×</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.stepsContainer}>
-                {currentStep === 4
-                  ? renderConfirmationStep()
-                  : currentStep <= 2
-                    ? renderTeamSelectionStep()
-                    : renderGameTypeSelectionStep()
-                }
-              </View>
-
-              {currentStep === 3 && (
-                <TouchableOpacity
-                  style={[
-                    styles.addPressButton,
-                    { 
-                      marginBottom: Platform.OS === 'ios' 
-                        ? insets.bottom > 0 ? insets.bottom : 15
-                        : 15 
-                    }
-                  ]}
-                  onPress={handleSave}
-                >
-                  <Text style={styles.addPressButtonText}>Add Press</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+          {/* Step indicator */}
+          <View style={styles.stepIndicatorContainer}>
+            <View style={[
+              styles.stepIndicator, 
+              step >= 1 && styles.stepIndicatorActive
+            ]} />
+            <View style={[
+              styles.stepIndicatorLine,
+            ]} />
+            <View style={[
+              styles.stepIndicator, 
+              step >= 2 && styles.stepIndicatorActive
+            ]} />
+            <View style={[
+              styles.stepIndicatorLine,
+            ]} />
+            <View style={[
+              styles.stepIndicator, 
+              step >= 3 && styles.stepIndicatorActive
+            ]} />
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+          
+          {renderStepContent()}
+        </ScrollView>
+        
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.footerButton}
+            onPress={handlePrevStep}
+          >
+            <ChevronLeft size={20} color="#007AFF" />
+            <Text style={styles.footerButtonText}>
+              {step === 1 ? 'Cancel' : 'Back'}
+            </Text>
+          </TouchableOpacity>
+          
+          <View style={styles.footerCenter}>
+            <TouchableOpacity 
+              style={styles.doneButton}
+              onPress={handleDismiss}
+            >
+              <Text style={styles.doneButtonText}>No Presses</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.footerButton}
+            onPress={fromTeam && toTeam && pressType ? handleSubmitAll : undefined}
+            disabled={!(fromTeam && toTeam && pressType)}
+          >
+            <Text style={[
+              styles.footerButtonText,
+              !(fromTeam && toTeam && pressType) && styles.disabledButtonText
+            ]}>
+              Done
+            </Text>
+            <Check size={20} color={fromTeam && toTeam && pressType ? "#007AFF" : "#CCCCCC"} />
+          </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    // Add padding for iOS devices
+  modalContainer: {
+    margin: 0,
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#F5F5F5',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
-        paddingHorizontal: 10,
-        paddingBottom: 10,
-      }
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 5,
+      },
     }),
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '85%', 
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  iosModalContent: {
-    height: '70%',
-    borderRadius: 12,
-    // Enhanced iOS shadows
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
   },
   dragHandle: {
     width: 36,
@@ -600,255 +362,195 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
     backgroundColor: 'rgba(0,0,0,0.2)',
     alignSelf: 'center',
-    marginTop: 8,
+    marginTop: 6,
     marginBottom: 4,
   },
-  modalHeader: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  backButton: {
-    padding: 5,
-  },
-  backButtonText: {
-    color: '#4CAE4F',
-    fontWeight: 'bold',
-  },
-  closeButton: {
-    padding: 5,
-  },
-  closeButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  stepsContainer: {
-    padding: 20,
-    flex: 1, // Make this flex to ensure scrolling works properly
-  },
-  pressDetailsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 20,
-  },
-  teamsContainer: {
-    gap: 15,
-    marginBottom: 20,
-  },
-  teamOption: {
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 5,
-    // Add iOS-specific shadows to team options
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3,
-      },
-    }),
-  },
-  teamText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  teamRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 30,
-  },
-  teamCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // Add iOS-specific shadows to team circles
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-      },
-    }),
-  },
-  teamInitial: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  toText: {
-    color: '#333333',
-    fontSize: 16,
-    marginHorizontal: 10,
-  },
-  selectGameTypesTitle: {
-    fontSize: 16,
-    color: '#333333',
-    marginBottom: 15,
-  },
-  gameTypesContainer: {
-    gap: 0,
-  },
-  gameTypeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+    zIndex: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
-  gameTypeInfo: {
-    flex: 1,
-  },
-  gameTypeName: {
-    fontSize: 16,
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333333',
-    fontWeight: 'bold',
   },
-  gameTypeAmount: {
-    fontSize: 14,
-    color: '#777777',
-    marginTop: 5,
+  content: {
+    maxHeight: '80%',
   },
-  toggleButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#4CAE4F',
-    backgroundColor: 'transparent',
+  contentContainer: {
+    padding: 16,
   },
-  toggleButtonSelected: {
-    backgroundColor: '#4CAE4F',
-  },
-  addPressButton: {
-    backgroundColor: '#4CAE4F',
-    padding: 15,
+  stepIndicatorContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    margin: 15,
-    borderRadius: 8,
-    // Better touch target for iOS
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  stepIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#DDDDDD',
+  },
+  stepIndicatorActive: {
+    backgroundColor: '#007AFF',
+  },
+  stepIndicatorLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#DDDDDD',
+    marginHorizontal: 4,
+  },
+  stepContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    // Enhanced iOS shadow styling
     ...Platform.select({
       ios: {
-        paddingVertical: 16,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.1,
         shadowRadius: 4,
       },
-    }),
-  },
-  addPressButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  confirmationItem: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    // Add iOS-specific shadows
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+      android: {
+        elevation: 2,
       },
     }),
   },
-  pressTypesTitle: {
-    fontSize: 14,
-    fontWeight: '500',
+  stepTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333333',
-    marginTop: 8,
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  pressTypeList: {
-    paddingLeft: 8,
-  },
-  pressTypeItem: {
+  stepDescription: {
     fontSize: 14,
     color: '#666666',
-    marginBottom: 4,
+    marginBottom: 16,
   },
-  addAnotherButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 12,
+  teamsContainer: {
+    marginVertical: 8,
+  },
+  teamButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    padding: 16,
+    borderRadius: 10,
     marginBottom: 12,
   },
-  addAnotherButtonText: {
-    color: 'white',
+  teamInitial: {
+    fontSize: 18,
     fontWeight: '600',
-    fontSize: 16,
+    color: '#FFFFFF',
+    marginRight: 16,
+    width: 30,
+    textAlign: 'center',
   },
-  submitButton: {
-    backgroundColor: '#4CAE4F',
-    borderRadius: 8,
-    padding: 12,
+  teamName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFF',
+  },
+  pressTypesContainer: {
+    marginVertical: 8,
+  },
+  pressTypeButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F8F8',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
   },
-  submitButtonText: {
-    color: 'white',
-    fontWeight: '600',
+  pressTypeLabel: {
     fontSize: 16,
+    fontWeight: '500',
+    color: '#333333',
   },
-  noGameTypesText: {
-    textAlign: 'center',
-    color: '#999',
-    marginTop: 20,
-    marginBottom: 20,
-    fontStyle: 'italic',
-  },
-  pressInfoText: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 15,
-    fontStyle: 'italic',
-    textAlign: 'center',
-  },
-  matchStatusContainer: {
-    backgroundColor: '#F0F8FF',
+  betAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: '#007AFF',
   },
-  matchStatusTitle: {
+  betAmount: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333333',
-    marginBottom: 4,
+    marginLeft: 4,
   },
-  matchStatusMessage: {
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  footerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  footerButtonText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#007AFF',
+    marginHorizontal: 4,
   },
+  disabledButtonText: {
+    color: '#CCCCCC',
+  },
+  footerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  doneButton: {
+    backgroundColor: '#F2F2F2',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  doneButtonText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  matchStatusContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  matchStatusLabel: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  matchStatusValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+  }
 });
 
 export default StepPressModal;
