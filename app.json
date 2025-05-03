@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Press Tracker",
+    "name": "PressTrackerv1.1",
     "slug": "presstrackerv11",
     "version": "1.0.2",
     "icon": "./assets/images/icon.png",
@@ -31,7 +31,7 @@
     "userInterfaceStyle": "automatic",
     "updates": {
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/c4e41133-416c-44e7-a5e9-76b1fecc2bf6"
+      "url": "https://u.expo.dev/e28b9a3c-e4b8-4f9d-b66d-6b2b60ddc31b"
     },
     "runtimeVersion": {
       "policy": "1.0.0"
@@ -39,7 +39,7 @@
     "jsEngine": "hermes",
     "extra": {
       "eas": {
-        "projectId": "c4e41133-416c-44e7-a5e9-76b1fecc2bf6"
+        "projectId": "e28b9a3c-e4b8-4f9d-b66d-6b2b60ddc31b"
       }
     },
     "owner": "lorcania"
