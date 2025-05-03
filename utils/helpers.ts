@@ -1,201 +1,106 @@
-// Utility functions for match calculations and helper methods
-
-// Generate random IDs
+/**
+ * Generate a unique ID
+ * @returns A unique string ID
+ */
 export function generateUniqueId(): string {
-  return Math.random().toString(36).substring(2, 11);
-}
-
-// Define interfaces for proper type checking
-export interface MatchPlayResult {
-  team1Wins: number;
-  team2Wins: number;
-  halvedHoles: number;
-  completedHoles: number;
-  holesRemaining: number;
-  isMatchOver: boolean;
-  status: string;
-}
-
-export interface StrokePlayTeamResult {
-  teamId: string;
-  teamName: string;
-  totalScore: number;
-  completedHoles: number;
-  average: number;
-}
-
-export interface StrokePlayResult {
-  details: StrokePlayTeamResult[];
-  teamLeading?: string;
-  leadingBy?: number;
-  status: string;
-  isComplete: boolean;
+  return Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 }
 
 /**
- * Calculate match play results based on completed holes
- * In match play, each hole is worth 1 point - a team either wins, loses, or halves the hole
+ * Calculate match play results
+ * @param teams Array of teams
+ * @param holes Array of holes with scores
+ * @returns Match play results
  */
-export function calculateMatchPlay(teams: any[], holes: any[]): MatchPlayResult {
-  // Ensure we have exactly 2 teams
+export function calculateMatchPlay(teams: any[], holes: any[]) {
+  // Ensure we have exactly two teams
   if (teams.length !== 2) {
-    return {
-      team1Wins: 0,
-      team2Wins: 0,
-      halvedHoles: 0,
-      completedHoles: 0,
-      holesRemaining: 18,
-      isMatchOver: false,
-      status: "Invalid team count"
+    return { 
+      status: 'Invalid number of teams', 
+      details: null 
     };
   }
-  
+
   const team1 = teams[0];
   const team2 = teams[1];
   
   let team1Wins = 0;
   let team2Wins = 0;
-  let halvedHoles = 0;
-  let completedHoles = 0;
+  let ties = 0;
   
-  // Process each hole
+  // Calculate hole-by-hole results
   holes.forEach(hole => {
-    if (hole.isComplete) {
-      completedHoles++;
-      
-      // Find scores for both teams
-      const team1ScoreObj = hole.scores.find((s: any) => s.teamId === team1.id);
-      const team2ScoreObj = hole.scores.find((s: any) => s.teamId === team2.id);
-      
-      // Skip if either score is missing or null
-      if (!team1ScoreObj || !team2ScoreObj || 
-          team1ScoreObj.score === null || team2ScoreObj.score === null) {
-        return;
-      }
-      
-      const team1Score = team1ScoreObj.score;
-      const team2Score = team2ScoreObj.score;
-      
-      // Match play logic - only the difference of win/loss matters, not by how many strokes
-      if (team1Score < team2Score) {
-        team1Wins++; // Team 1 wins the hole by 1 point (regardless of stroke differential)
-      } else if (team2Score < team1Score) {
-        team2Wins++; // Team 2 wins the hole by 1 point
-      } else {
-        halvedHoles++; // Tie on this hole - halved
-      }
+    if (!hole.isComplete) return;
+    
+    const team1Score = hole.scores.find((s: any) => s.teamId === team1.id)?.score;
+    const team2Score = hole.scores.find((s: any) => s.teamId === team2.id)?.score;
+    
+    if (team1Score === null || team2Score === null) return;
+    
+    if (team1Score < team2Score) {
+      team1Wins++;
+    } else if (team2Score < team1Score) {
+      team2Wins++;
+    } else {
+      ties++;
     }
   });
   
-  // Calculate remaining holes
-  const holesRemaining = 18 - completedHoles;
+  // Calculate net result
+  const netResult = team1Wins - team2Wins;
   
-  // Calculate if match is over
-  // A match is over if one team has more wins than the other team can possibly achieve
-  const isMatchOver = (team1Wins > team2Wins + holesRemaining) || 
-                      (team2Wins > team1Wins + holesRemaining);
-  
-  // Generate a status message
-  let statusMessage = '';
-  const netScore = team1Wins - team2Wins;
-  
-  if (netScore === 0) {
-    statusMessage = "All Square";
-  } else if (netScore > 0) {
-    statusMessage = `${team1.name} ${netScore} UP`;
+  let status;
+  if (netResult > 0) {
+    status = `${team1.name} ${netResult} UP`;
+  } else if (netResult < 0) {
+    status = `${team2.name} ${Math.abs(netResult)} UP`;
   } else {
-    statusMessage = `${team2.name} ${Math.abs(netScore)} UP`;
+    status = 'All Square';
   }
   
-  // Return structured result
   return {
-    team1Wins,
-    team2Wins,
-    halvedHoles,
-    completedHoles,
-    holesRemaining,
-    isMatchOver,
-    status: statusMessage
+    status,
+    details: {
+      team1Wins,
+      team2Wins,
+      ties,
+      netResult
+    }
   };
 }
 
 /**
- * Calculate stroke play results based on completed holes
- * In stroke play, the actual score differential matters for each hole
+ * Calculate stroke play results
+ * @param teams Array of teams
+ * @param holes Array of holes with scores
+ * @returns Stroke play results
  */
-export function calculateStrokePlay(teams: any[], holes: any[]): StrokePlayResult {
-  // Track detailed scores for each team
-  const teamDetails = teams.map(team => ({
-    teamId: team.id,
-    name: team.name,
-    totalScore: 0,
-    holesPlayed: 0
-  }));
-  
-  // Calculate each team's total score from completed holes
-  holes.forEach(hole => {
-    if (hole.isComplete) {
-      hole.scores.forEach((score: any) => {
-        if (score.score !== null) {
-          const teamDetail = teamDetails.find(t => t.teamId === score.teamId);
-          if (teamDetail) {
-            teamDetail.totalScore += score.score;
-            teamDetail.holesPlayed += 1;
-          }
-        }
-      });
-    }
+export function calculateStrokePlay(teams: any[], holes: any[]) {
+  // Calculate total scores for each team
+  const results = teams.map(team => {
+    let totalScore = 0;
+    
+    holes.forEach(hole => {
+      if (!hole.isComplete) return;
+      
+      const score = hole.scores.find((s: any) => s.teamId === team.id)?.score;
+      if (score !== null && score !== undefined) {
+        totalScore += score;
+      }
+    });
+    
+    return {
+      teamId: team.id,
+      teamName: team.name,
+      totalScore
+    };
   });
   
-  // Create properly formatted team results
-  const teamResults: StrokePlayTeamResult[] = teamDetails.map(team => ({
-    teamId: team.teamId,
-    teamName: team.name,
-    totalScore: team.totalScore,
-    completedHoles: team.holesPlayed,
-    average: team.holesPlayed > 0 ? team.totalScore / team.holesPlayed : 0
-  }));
+  // Sort by lowest score
+  results.sort((a, b) => a.totalScore - b.totalScore);
   
-  // Find the team with the lowest score (winner in stroke play)
-  let leadingTeam: string | undefined;
-  let leadingBy: number | undefined;
-  
-  if (teams.length === 2 && teamResults[0].completedHoles > 0 && teamResults[1].completedHoles > 0) {
-    const team1 = teamResults[0];
-    const team2 = teamResults[1];
-    
-    if (team1.totalScore < team2.totalScore) {
-      leadingTeam = team1.teamName;
-      leadingBy = team2.totalScore - team1.totalScore;
-    } else if (team2.totalScore < team1.totalScore) {
-      leadingTeam = team2.teamName;
-      leadingBy = team1.totalScore - team2.totalScore;
-    }
-  }
-  
-  // Generate a status message
-  let statusMessage = '';
-  
-  if (leadingTeam && leadingBy) {
-    statusMessage = `${leadingTeam} leads by ${leadingBy} strokes`;
-  } else if (teamResults.length >= 2 && 
-             teamResults[0].completedHoles > 0 && 
-             teamResults[1].completedHoles > 0 && 
-             teamResults[0].totalScore === teamResults[1].totalScore) {
-    statusMessage = "Match is tied";
-  } else {
-    statusMessage = "Scores not available";
-  }
-  
-  // Determine if match is complete (all 18 holes played)
-  const isComplete = holes.every(h => h.isComplete);
-  
-  // Return structured result
   return {
-    details: teamResults,
-    teamLeading: leadingTeam,
-    leadingBy,
-    status: statusMessage,
-    isComplete
+    status: `${results[0].teamName} leads with ${results[0].totalScore}`,
+    details: results
   };
 }

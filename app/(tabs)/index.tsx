@@ -115,11 +115,15 @@ export default function HomeScreen() {
         { paddingTop: Platform.OS === 'ios' ? statusBarPadding : 20 }
       ]}>
         <View>
-          <Text style={styles.welcomeText}>Golf Match Tracker</Text>
+          <Image 
+            source={require('@/assets/logo.png')} 
+            style={styles.logoImage} 
+            resizeMode="contain"
+          />
           <Text style={styles.subText}>Welcome back!</Text>
         </View>
         <Image
-          source={{ uri: 'https://images.pexels.com/photos/914930/pexels-photo-914930.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&dpr=2' }}
+          source={require('@/assets/avatar.png')}
           style={styles.profileImage}
         />
       </View>
@@ -235,6 +239,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+  logoImage: {
+    height: 40,
+    width: 200,
+    marginBottom: 4,
   },
   quickActionsGrid: {
     flexDirection: 'row',
